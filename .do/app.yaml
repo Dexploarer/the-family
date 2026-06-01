@@ -1,21 +1,22 @@
-# DigitalOcean App Platform — deploy from GHCR (digest set by deploy workflow).
-# Image: ghcr.io/dexploarer/nancy  (see .github/workflows/deploy.yml + publish.yml)
+# DigitalOcean App Platform spec for Nancy (matches live app).
+# Production builds from GitHub on push (deploy_on_push). GHCR images: publish.yml.
 name: nancy
 region: sfo
 services:
   - name: bot
     instance_count: 1
     instance_size_slug: basic-xxs
+    dockerfile_path: Dockerfile
+    source_dir: /
+    github:
+      repo: Dexploarer/Nancy
+      branch: main
+      deploy_on_push: true
     http_port: 8080
     health_check:
       http_path: /health
       initial_delay_seconds: 20
       period_seconds: 30
-    image:
-      registry_type: GHCR
-      registry: Dexploarer
-      repository: nancy
-      digest: ${IMAGE_DIGEST}
     envs:
       - key: HTTP_PORT
         scope: RUN_AND_BUILD_TIME
@@ -28,6 +29,4 @@ services:
         value: ${APP_URL}
       - key: ADMIN_BOOTSTRAP_EMAIL
         value: dexploarer@gmail.com
-      # Remaining vars live in the App Platform dashboard (secrets + plain config).
-      # TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, DATABASE_URL, SAFE_API_KEY,
-      # PINATA_JWT, ADMIN_SESSION_SECRET, BSC_*, PLATFORM_*, ELIZA_*, AGENTMAIL_API_KEY, etc.
+      # Remaining vars are set in the App Platform dashboard (secrets + plain config).
