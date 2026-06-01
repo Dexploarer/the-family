@@ -14,6 +14,7 @@ import {
 const emailSchema = z.object({ email: z.string().email() });
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
 const setPasswordSchema = z.object({ email: z.string().email(), password: z.string().min(12) });
+const acceptInviteSchema = z.object({ token: z.string().min(16), password: z.string().min(12) });
 
 function disabled(): Response {
   return Response.json({ error: "Admin dashboard is not configured" }, { status: 503 });
@@ -69,6 +70,31 @@ export async function handleAdminAuthLogout(app: App, _config: AppConfig, reques
   const sessionId = readSessionCookie(request);
   await app.adminAccount.logout(sessionId);
   return Response.json({ ok: true }, { headers: { "Set-Cookie": clearSessionCookieHeader() } });
+}
+
+export async function handleAdminAuthInvitePreview(app: App, config: AppConfig, url: URL): Promise<Response> {
+  if (!adminDashboardEnabled(config)) {
+    return disabled();
+  }
+  const token = url.searchParams.get("token");
+  if (token === null || token.trim().length === 0) {
+    throw new UserInputError("Missing invite token.");
+  }
+  return Response.json(await app.adminInvite.previewInvite(token));
+}
+
+export async function handleAdminAuthAcceptInvite(app: App, config: AppConfig, request: Request): Promise<Response> {
+  if (!adminDashboardEnabled(config) || config.adminSessionSecret === undefined) {
+    return disabled();
+  }
+  const body = await request.json().catch(() => null);
+  const parsed = acceptInviteSchema.safeParse(body);
+  if (!parsed.success) {
+    throw new UserInputError("Password must be at least 12 characters.");
+  }
+  const invite = await app.adminInvite.consumeInvite(parsed.data.token);
+  const result = await app.adminAccount.setPassword(invite.email, parsed.data.password);
+  return jsonWithSession({ user: result.user }, result.sessionId, config);
 }
 
 export async function handleAdminAuthMe(app: App, config: AppConfig, request: Request): Promise<Response> {

@@ -1,9 +1,11 @@
 import type {
+  AdminInvite,
   AdminSession,
   AdminUser,
   ChatId,
   FlapLaunchProposal,
   GroupWallet,
+  ModelInferenceLog,
   PendingPrompt,
   SafeCreationSession,
   SafeSubmission,
@@ -27,6 +29,9 @@ export class MemoryRepository implements Repository {
   private readonly adminUsers = new Map<string, AdminUser>();
   private readonly adminUsersByEmail = new Map<string, string>();
   private readonly adminSessions = new Map<string, AdminSession>();
+  private readonly adminInvites = new Map<string, AdminInvite>();
+  private readonly adminInvitesByToken = new Map<string, string>();
+  private readonly modelInferenceLogs: ModelInferenceLog[] = [];
 
   async getGroupWallet(chatId: ChatId): Promise<GroupWallet | null> {
     return this.groupWallets.get(chatId) ?? null;
@@ -207,6 +212,75 @@ export class MemoryRepository implements Repository {
         this.adminSessions.delete(sessionId);
       }
     }
+  }
+
+  async saveAdminInvite(invite: AdminInvite): Promise<void> {
+    this.adminInvites.set(invite.id, invite);
+    this.adminInvitesByToken.set(invite.tokenHash, invite.id);
+  }
+
+  async getAdminInviteByTokenHash(tokenHash: string): Promise<AdminInvite | null> {
+    const id = this.adminInvitesByToken.get(tokenHash);
+    return id === undefined ? null : (this.adminInvites.get(id) ?? null);
+  }
+
+  async markAdminInviteAccepted(id: string, acceptedAt: Date): Promise<void> {
+    const invite = this.adminInvites.get(id);
+    if (invite !== undefined) {
+      this.adminInvites.set(id, { ...invite, acceptedAt });
+    }
+  }
+
+  async deleteExpiredAdminInvites(now: Date): Promise<void> {
+    for (const [id, invite] of this.adminInvites.entries()) {
+      if (invite.expiresAt <= now) {
+        this.adminInvites.delete(id);
+        this.adminInvitesByToken.delete(invite.tokenHash);
+      }
+    }
+  }
+
+  async saveModelInferenceLog(log: ModelInferenceLog): Promise<void> {
+    this.modelInferenceLogs.push(log);
+  }
+
+  async listModelInferenceLogs(options?: {
+    since?: Date;
+    chatId?: ChatId;
+    tokenAddress?: string;
+    limit?: number;
+  }): Promise<ModelInferenceLog[]> {
+    const limit = options?.limit ?? 200;
+    let rows = [...this.modelInferenceLogs];
+    if (options?.since !== undefined) {
+      rows = rows.filter((row) => row.createdAt >= options.since!);
+    }
+    if (options?.chatId !== undefined) {
+      rows = rows.filter((row) => row.chatId === options.chatId);
+    }
+    if (options?.tokenAddress !== undefined) {
+      const needle = options.tokenAddress.toLowerCase();
+      rows = rows.filter((row) => row.tokenAddress?.toLowerCase() === needle);
+    }
+    return rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, limit);
+  }
+
+  async listSafeSubmissions(limit = 100): Promise<SafeSubmission[]> {
+    return [...this.safeSubmissions.values()]
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limit);
+  }
+
+  async listTradeProposals(limit = 100): Promise<TradeProposal[]> {
+    return [...this.tradeProposals.values()]
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limit);
+  }
+
+  async listFlapLaunches(limit = 100): Promise<FlapLaunchProposal[]> {
+    return [...this.flapLaunches.values()]
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limit);
   }
 }
 

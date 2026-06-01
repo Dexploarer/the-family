@@ -1,9 +1,11 @@
 import type {
+  AdminInvite,
   AdminSession,
   AdminUser,
   ChatId,
   FlapLaunchProposal,
   GroupWallet,
+  ModelInferenceLog,
   PendingPrompt,
   SafeCreationSession,
   SafeSubmission,
@@ -52,4 +54,18 @@ export interface Repository {
   saveAdminSession(session: AdminSession): Promise<void>;
   deleteAdminSession(id: string): Promise<void>;
   deleteExpiredAdminSessions(now: Date): Promise<void>;
+  saveAdminInvite(invite: AdminInvite): Promise<void>;
+  getAdminInviteByTokenHash(tokenHash: string): Promise<AdminInvite | null>;
+  markAdminInviteAccepted(id: string, acceptedAt: Date): Promise<void>;
+  deleteExpiredAdminInvites(now: Date): Promise<void>;
+  saveModelInferenceLog(log: ModelInferenceLog): Promise<void>;
+  listModelInferenceLogs(options?: {
+    since?: Date;
+    chatId?: ChatId;
+    tokenAddress?: string;
+    limit?: number;
+  }): Promise<ModelInferenceLog[]>;
+  listSafeSubmissions(limit?: number): Promise<SafeSubmission[]>;
+  listTradeProposals(limit?: number): Promise<TradeProposal[]>;
+  listFlapLaunches(limit?: number): Promise<FlapLaunchProposal[]>;
 }

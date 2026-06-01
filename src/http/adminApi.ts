@@ -109,10 +109,61 @@ export async function handleAdminGroupReport(
     return auth;
   }
   try {
-    return Response.json(await app.adminDashboard.getGroupReport(chatId));
+    return Response.json({ view: await app.adminDashboard.getGroupReportView(chatId) });
   } catch {
     return Response.json({ error: "Group not found" }, { status: 404 });
   }
+}
+
+export async function handleAdminSafeQueue(app: App, config: AppConfig, request: Request): Promise<Response> {
+  const auth = await requirePrincipal(app, config, request);
+  if (auth instanceof Response) {
+    return auth;
+  }
+  return Response.json({ items: await app.adminDashboard.listSafeQueue() });
+}
+
+export async function handleAdminModelLogs(app: App, config: AppConfig, request: Request, url: URL): Promise<Response> {
+  const auth = await requirePrincipal(app, config, request);
+  if (auth instanceof Response) {
+    return auth;
+  }
+  const hours = url.searchParams.get("hours");
+  const parsed = hours === null ? 24 : Number(hours);
+  const logs = await app.modelInferenceLog.listRecent({
+    hours: Number.isNaN(parsed) ? 24 : parsed,
+    limit: 200
+  });
+  return Response.json({
+    logs: logs.map((log) => ({
+      id: log.id,
+      source: log.source,
+      model: log.model,
+      status: log.status,
+      telegramUserId: log.telegramUserId,
+      chatId: log.chatId,
+      tokenSymbol: log.tokenSymbol,
+      tokenAddress: log.tokenAddress,
+      language: log.language,
+      latencyMs: log.latencyMs,
+      promptPreview: log.promptPreview,
+      responsePreview: log.responsePreview,
+      errorMessage: log.errorMessage,
+      createdAt: log.createdAt.toISOString()
+    }))
+  });
+}
+
+export async function handleAdminModelAnalytics(app: App, config: AppConfig, request: Request, url: URL): Promise<Response> {
+  const auth = await requirePrincipal(app, config, request);
+  if (auth instanceof Response) {
+    return auth;
+  }
+  const hours = url.searchParams.get("hours");
+  const parsed = hours === null ? 24 : Number(hours);
+  return Response.json({
+    analytics: await app.modelInferenceLog.getAnalytics({ hours: Number.isNaN(parsed) ? 24 : parsed })
+  });
 }
 
 export async function handleAdminUsage(app: App, config: AppConfig, request: Request, url: URL): Promise<Response> {
@@ -202,8 +253,8 @@ export async function handleAdminUsersInvite(app: App, config: AppConfig, reques
   if (!parsed.success) {
     throw new UserInputError("Invalid invite payload");
   }
-  const user = await app.adminAccount.inviteUser(parsed.data.email, parsed.data.role);
-  return Response.json({ user });
+  const result = await app.adminInvite.createInvite(parsed.data.email, parsed.data.role, auth.user);
+  return Response.json(result);
 }
 
 export async function handleAdminUsersDelete(

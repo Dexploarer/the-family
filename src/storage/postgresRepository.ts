@@ -1,11 +1,13 @@
 import { Pool } from "pg";
 import { buildPgPoolConfig } from "./pgPoolConfig.js";
 import type {
+  AdminInvite,
   AdminSession,
   AdminUser,
   ChatId,
   FlapLaunchProposal,
   GroupWallet,
+  ModelInferenceLog,
   PendingPrompt,
   SafeCreationSession,
   SafeSubmission,
@@ -631,6 +633,151 @@ export class PostgresRepository implements Repository {
   async deleteExpiredAdminSessions(now: Date): Promise<void> {
     await this.pool.query("delete from admin_sessions where expires_at <= $1", [now]);
   }
+
+  async saveAdminInvite(invite: AdminInvite): Promise<void> {
+    await this.pool.query(
+      `insert into admin_invites(id, email, role, token_hash, created_by_user_id, expires_at, accepted_at, created_at)
+       values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        invite.id,
+        invite.email,
+        invite.role,
+        invite.tokenHash,
+        invite.createdByUserId,
+        invite.expiresAt,
+        invite.acceptedAt,
+        invite.createdAt
+      ]
+    );
+  }
+
+  async getAdminInviteByTokenHash(tokenHash: string): Promise<AdminInvite | null> {
+    try {
+      const result = await this.pool.query<AdminInviteRow>(
+        "select id, email, role, token_hash, created_by_user_id, expires_at, accepted_at, created_at from admin_invites where token_hash = $1",
+        [tokenHash]
+      );
+      const row = result.rows[0];
+      return row === undefined ? null : deserializeAdminInvite(row);
+    } catch {
+      return null;
+    }
+  }
+
+  async markAdminInviteAccepted(id: string, acceptedAt: Date): Promise<void> {
+    await this.pool.query("update admin_invites set accepted_at = $2 where id = $1", [id, acceptedAt]);
+  }
+
+  async deleteExpiredAdminInvites(now: Date): Promise<void> {
+    await this.pool.query("delete from admin_invites where expires_at <= $1", [now]);
+  }
+
+  async saveModelInferenceLog(log: ModelInferenceLog): Promise<void> {
+    try {
+      await this.pool.query(
+        `insert into model_inference_logs(
+          id, source, model, status, telegram_user_id, chat_id, token_symbol, token_address,
+          language, latency_ms, prompt_preview, response_preview, error_message, created_at
+        ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+        [
+          log.id,
+          log.source,
+          log.model,
+          log.status,
+          log.telegramUserId,
+          log.chatId,
+          log.tokenSymbol,
+          log.tokenAddress,
+          log.language,
+          log.latencyMs,
+          log.promptPreview,
+          log.responsePreview,
+          log.errorMessage,
+          log.createdAt
+        ]
+      );
+    } catch {
+      // table may not exist until migration runs
+    }
+  }
+
+  async listModelInferenceLogs(options?: {
+    since?: Date;
+    chatId?: ChatId;
+    tokenAddress?: string;
+    limit?: number;
+  }): Promise<ModelInferenceLog[]> {
+    const limit = options?.limit ?? 200;
+    const clauses: string[] = [];
+    const params: unknown[] = [];
+    if (options?.since !== undefined) {
+      params.push(options.since);
+      clauses.push(`created_at >= $${params.length}`);
+    }
+    if (options?.chatId !== undefined) {
+      params.push(options.chatId);
+      clauses.push(`chat_id = $${params.length}`);
+    }
+    if (options?.tokenAddress !== undefined) {
+      params.push(options.tokenAddress.toLowerCase());
+      clauses.push(`lower(token_address) = $${params.length}`);
+    }
+    params.push(limit);
+    const where = clauses.length > 0 ? `where ${clauses.join(" and ")}` : "";
+    try {
+      const result = await this.pool.query<ModelInferenceLogRow>(
+        `select id, source, model, status, telegram_user_id, chat_id, token_symbol, token_address,
+         language, latency_ms, prompt_preview, response_preview, error_message, created_at
+         from model_inference_logs ${where} order by created_at desc limit $${params.length}`,
+        params
+      );
+      return result.rows.map(deserializeModelInferenceLog);
+    } catch {
+      return [];
+    }
+  }
+
+  async listSafeSubmissions(limit = 100): Promise<SafeSubmission[]> {
+    try {
+      const result = await this.pool.query<SafeSubmissionRow>(
+        `select id, chat_id, source_type, source_id, safe_address, safe_tx_hash, safe_transaction,
+         transaction_service_url, status, sender_address, submitted_at, created_at
+         from safe_submissions order by created_at desc limit $1`,
+        [limit]
+      );
+      return result.rows.map((row) => mapSafeSubmissionRow(row));
+    } catch {
+      return [];
+    }
+  }
+
+  async listTradeProposals(limit = 100): Promise<TradeProposal[]> {
+    try {
+      const result = await this.pool.query<TradeProposalRow>(
+        `select id, chat_id, proposer_telegram_id, token_address, input_amount_wei, min_output_amount,
+         fee_amount_wei, route, status, risk_report, transactions, created_at
+         from trade_proposals order by created_at desc limit $1`,
+        [limit]
+      );
+      return result.rows.map((row) => mapTradeProposalRow(row));
+    } catch {
+      return [];
+    }
+  }
+
+  async listFlapLaunches(limit = 100): Promise<FlapLaunchProposal[]> {
+    try {
+      const result = await this.pool.query<FlapLaunchRow>(
+        `select id, chat_id, proposer_telegram_id, name, symbol, metadata_uri, buy_tax_bps, sell_tax_bps,
+         tax_duration_seconds, initial_buy_wei, recipients, salt, transactions, created_at
+         from flap_launches order by created_at desc limit $1`,
+        [limit]
+      );
+      return result.rows.map((row) => mapFlapLaunchRow(row));
+    } catch {
+      return [];
+    }
+  }
 }
 
 type AdminUserRow = {
@@ -667,6 +814,119 @@ function deserializeAdminSession(row: AdminSessionRow): AdminSession {
     id: row.id,
     userId: row.user_id,
     expiresAt: row.expires_at,
+    createdAt: row.created_at
+  };
+}
+
+type AdminInviteRow = {
+  id: string;
+  email: string;
+  role: "super_admin" | "admin";
+  token_hash: string;
+  created_by_user_id: string | null;
+  expires_at: Date;
+  accepted_at: Date | null;
+  created_at: Date;
+};
+
+type ModelInferenceLogRow = {
+  id: string;
+  source: string;
+  model: string;
+  status: "ok" | "fallback" | "error";
+  telegram_user_id: string | null;
+  chat_id: string | null;
+  token_symbol: string | null;
+  token_address: string | null;
+  language: string;
+  latency_ms: number;
+  prompt_preview: string;
+  response_preview: string | null;
+  error_message: string | null;
+  created_at: Date;
+};
+
+function deserializeAdminInvite(row: AdminInviteRow): AdminInvite {
+  return {
+    id: row.id,
+    email: row.email,
+    role: row.role,
+    tokenHash: row.token_hash,
+    createdByUserId: row.created_by_user_id,
+    expiresAt: row.expires_at,
+    acceptedAt: row.accepted_at,
+    createdAt: row.created_at
+  };
+}
+
+function deserializeModelInferenceLog(row: ModelInferenceLogRow): ModelInferenceLog {
+  return {
+    id: row.id,
+    source: row.source as ModelInferenceLog["source"],
+    model: row.model,
+    status: row.status,
+    telegramUserId: row.telegram_user_id,
+    chatId: row.chat_id,
+    tokenSymbol: row.token_symbol,
+    tokenAddress: row.token_address as ModelInferenceLog["tokenAddress"],
+    language: row.language,
+    latencyMs: row.latency_ms,
+    promptPreview: row.prompt_preview,
+    responsePreview: row.response_preview,
+    errorMessage: row.error_message,
+    createdAt: row.created_at
+  };
+}
+
+function mapTradeProposalRow(row: TradeProposalRow): TradeProposal {
+  return {
+    id: row.id,
+    chatId: row.chat_id,
+    proposerTelegramId: row.proposer_telegram_id,
+    tokenAddress: row.token_address,
+    inputAmountWei: BigInt(row.input_amount_wei),
+    minOutputAmount: BigInt(row.min_output_amount),
+    feeAmountWei: BigInt(row.fee_amount_wei),
+    route: row.route,
+    status: row.status,
+    riskReport: deserializeRiskReport(row.risk_report),
+    transactions: deserializeTransactions(row.transactions),
+    createdAt: row.created_at
+  };
+}
+
+function mapFlapLaunchRow(row: FlapLaunchRow): FlapLaunchProposal {
+  return {
+    id: row.id,
+    chatId: row.chat_id,
+    proposerTelegramId: row.proposer_telegram_id,
+    name: row.name,
+    symbol: row.symbol,
+    metadataUri: row.metadata_uri,
+    buyTaxBps: row.buy_tax_bps,
+    sellTaxBps: row.sell_tax_bps,
+    taxDurationSeconds: row.tax_duration_seconds,
+    initialBuyWei: BigInt(row.initial_buy_wei),
+    recipients: row.recipients,
+    salt: row.salt,
+    transactions: deserializeTransactions(row.transactions),
+    createdAt: row.created_at
+  };
+}
+
+function mapSafeSubmissionRow(row: SafeSubmissionRow): SafeSubmission {
+  return {
+    id: row.id,
+    chatId: row.chat_id,
+    sourceType: row.source_type,
+    sourceId: row.source_id,
+    safeAddress: row.safe_address,
+    safeTxHash: row.safe_tx_hash,
+    safeTransaction: deserializeSafeTransaction(row.safe_transaction),
+    transactionServiceUrl: row.transaction_service_url,
+    status: row.status,
+    ...(row.sender_address === null ? {} : { senderAddress: row.sender_address }),
+    ...(row.submitted_at === null ? {} : { submittedAt: row.submitted_at }),
     createdAt: row.created_at
   };
 }

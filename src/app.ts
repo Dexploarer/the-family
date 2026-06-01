@@ -25,6 +25,8 @@ import { PoolService } from "./services/poolService.js";
 import { PlatformSettingsService } from "./services/platformSettings.js";
 import { AdminDashboardService } from "./services/adminDashboardService.js";
 import { AdminAccountService } from "./services/adminAccountService.js";
+import { AdminInviteService } from "./services/adminInviteService.js";
+import { ModelInferenceLogService } from "./services/modelInferenceLogService.js";
 import { BrandingService } from "./services/brandingService.js";
 import { DepositVerificationService } from "./services/depositVerificationService.js";
 import { MemoryRepository } from "./storage/memoryRepository.js";
@@ -50,6 +52,8 @@ export type App = {
   platformSettings: PlatformSettingsService;
   adminDashboard: AdminDashboardService;
   adminAccount: AdminAccountService;
+  adminInvite: AdminInviteService;
+  modelInferenceLog: ModelInferenceLogService;
   branding: BrandingService;
 };
 
@@ -75,9 +79,12 @@ export function buildApp(config: AppConfig): App {
     poolRepository,
     poolService,
     platformSettings,
-    config.poolWithdrawalFeeBps
+    config.poolWithdrawalFeeBps,
+    config.publicBaseUrl
   );
   const adminAccount = new AdminAccountService(repository, config);
+  const adminInvite = new AdminInviteService(repository, config);
+  const modelInferenceLog = new ModelInferenceLogService(repository, config.elizaModelName);
   const branding = new BrandingService(repository);
   const depositVerificationService = new DepositVerificationService(config.bscRpcUrl, config.bscChainId);
   const safeDeploymentService = new SafeDeploymentService(addresses, config.bscRpcUrl, config.bscChainId);
@@ -111,11 +118,14 @@ export function buildApp(config: AppConfig): App {
   const explanationService: ExplanationService =
     config.elizaModelUrl === undefined
       ? new TemplatedExplanationService()
-      : new ElizaExplanationService({
-          url: config.elizaModelUrl,
-          model: config.elizaModelName,
-          ...(config.elizaModelApiKey === undefined ? {} : { apiKey: config.elizaModelApiKey })
-        });
+      : new ElizaExplanationService(
+          {
+            url: config.elizaModelUrl,
+            model: config.elizaModelName,
+            ...(config.elizaModelApiKey === undefined ? {} : { apiKey: config.elizaModelApiKey })
+          },
+          modelInferenceLog
+        );
   const voiceService =
     config.kokoroTtsUrl === undefined
       ? undefined
@@ -177,6 +187,8 @@ export function buildApp(config: AppConfig): App {
     platformSettings,
     adminDashboard,
     adminAccount,
+    adminInvite,
+    modelInferenceLog,
     branding
   };
 }

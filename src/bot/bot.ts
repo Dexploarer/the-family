@@ -445,7 +445,11 @@ export function createBot(dependencies: BotDependencies): Bot {
             return;
           }
           const languages = normalizeLanguages((await dependencies.repository.getGroupLanguages(chatId)) ?? []);
-          const explanation = await dependencies.explanationService.explain(entry, languages);
+          const explanation = await dependencies.explanationService.explain(entry, languages, {
+            source: "watchlist_detail",
+            telegramUserId: fromId,
+            chatId
+          });
           const [voiceFlag, videoFlag] = await Promise.all([
             dependencies.platformSettings.isVoiceEnabled(),
             dependencies.platformSettings.isVideoEnabled()
@@ -650,7 +654,11 @@ async function nancySpokenTake(
   const list = await deps.watchlistService.getList(Number(chatId), treasuryBnb);
   const entry = list.find((e) => e.candidate.tokenAddress.toLowerCase() === tokenAddress.toLowerCase());
   if (entry === undefined) return { ok: false, reason: "gone" };
-  const take = await deps.explanationService.explain(entry, [voiceLang]);
+  const take = await deps.explanationService.explain(entry, [voiceLang], {
+    source: "watchlist_voice",
+    telegramUserId: fromId,
+    chatId
+  });
   const spoken = take.replace(/[*_`\[\]#]/g, "");
   const audio = deps.voiceService === undefined ? null : await deps.voiceService.synthesize(spoken, voiceLang);
   if (audio === null) return { ok: false, reason: "synth" };

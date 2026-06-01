@@ -191,6 +191,38 @@ export type AdminSession = {
   createdAt: Date;
 };
 
+export type AdminInvite = {
+  id: string;
+  email: string;
+  role: AdminRole;
+  tokenHash: string;
+  createdByUserId: string | null;
+  expiresAt: Date;
+  acceptedAt: Date | null;
+  createdAt: Date;
+};
+
+export type ModelInferenceSource = "watchlist_detail" | "watchlist_voice";
+
+export type ModelInferenceStatus = "ok" | "fallback" | "error";
+
+export type ModelInferenceLog = {
+  id: string;
+  source: ModelInferenceSource;
+  model: string;
+  status: ModelInferenceStatus;
+  telegramUserId: string | null;
+  chatId: ChatId | null;
+  tokenSymbol: string | null;
+  tokenAddress: Address | null;
+  language: string;
+  latencyMs: number;
+  promptPreview: string;
+  responsePreview: string | null;
+  errorMessage: string | null;
+  createdAt: Date;
+};
+
 export type PoolLedgerEntryType =
   | "deposit"
   | "withdrawal-request"

@@ -1,8 +1,9 @@
 import type { WatchlistEntry } from "../domain/types.js";
 import { languageByCode } from "../domain/languages.js";
+import type { ModelInferenceLogService, ModelInferenceTrace } from "./modelInferenceLogService.js";
 
 export interface ExplanationService {
-  explain(entry: WatchlistEntry, languages: string[]): Promise<string>;
+  explain(entry: WatchlistEntry, languages: string[], trace?: ModelInferenceTrace): Promise<string>;
 }
 
 const SYSTEM_PROMPT =
@@ -10,7 +11,7 @@ const SYSTEM_PROMPT =
 
 // Deterministic, no I/O. Also the fallback when the model is unavailable.
 export class TemplatedExplanationService implements ExplanationService {
-  async explain(entry: WatchlistEntry, _languages: string[]): Promise<string> {
+  async explain(entry: WatchlistEntry, _languages: string[], _trace?: ModelInferenceTrace): Promise<string> {
     const verdict =
       entry.gate === "pass" ? "looks exitable" : entry.gate === "warn" ? "is risky to exit" : "is unsafe to enter";
     const head = `${entry.candidate.tokenSymbol} — grade ${entry.grade} (${entry.gate}). At ${entry.treasurySizeBnb} BNB it ${verdict}.`;
@@ -26,23 +27,27 @@ export type ElizaConfig = { url: string; model: string; timeoutMs?: number; apiK
 export class ElizaExplanationService implements ExplanationService {
   private readonly fallback = new TemplatedExplanationService();
 
-  constructor(private readonly config: ElizaConfig) {}
+  constructor(
+    private readonly config: ElizaConfig,
+    private readonly inferenceLog?: ModelInferenceLogService
+  ) {}
 
-  async explain(entry: WatchlistEntry, languages: string[]): Promise<string> {
+  async explain(entry: WatchlistEntry, languages: string[], trace?: ModelInferenceTrace): Promise<string> {
     const langs = languages.length > 0 ? languages : ["en"];
     const first = langs[0] ?? "en";
-    if (langs.length === 1) return this.generate(entry, first);
+    if (langs.length === 1) return this.generate(entry, first, trace);
     const parts: string[] = [];
     for (const code of langs) {
       const lang = languageByCode(code);
-      const text = await this.generate(entry, code); // one language at a time (CPU is sequential)
+      const text = await this.generate(entry, code, trace); // one language at a time (CPU is sequential)
       parts.push(lang ? `${lang.flag} ${text}` : text);
     }
     return parts.join("\n\n");
   }
 
-  private async generate(entry: WatchlistEntry, code: string): Promise<string> {
+  private async generate(entry: WatchlistEntry, code: string, trace?: ModelInferenceTrace): Promise<string> {
     const lang = languageByCode(code);
+    const started = Date.now();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.config.timeoutMs ?? 20000);
     try {
@@ -69,15 +74,59 @@ export class ElizaExplanationService implements ExplanationService {
           temperature: 0.2
         })
       });
-      if (!response.ok) return this.fallback.explain(entry, [code]);
+      if (!response.ok) {
+        const fallbackText = await this.fallback.explain(entry, [code]);
+        await this.logInference(trace, entry, code, "fallback", Date.now() - started, fallbackText, `HTTP ${response.status}`);
+        return fallbackText;
+      }
       const body = (await response.json()) as { choices?: { message?: { content?: string } }[] };
       const text = stripThink(body.choices?.[0]?.message?.content ?? "").trim();
-      return text.length > 0 ? text : this.fallback.explain(entry, [code]);
-    } catch {
-      return this.fallback.explain(entry, [code]);
+      if (text.length > 0) {
+        await this.logInference(trace, entry, code, "ok", Date.now() - started, text);
+        return text;
+      }
+      const fallbackText = await this.fallback.explain(entry, [code]);
+      await this.logInference(trace, entry, code, "fallback", Date.now() - started, fallbackText, "empty model content");
+      return fallbackText;
+    } catch (error) {
+      const fallbackText = await this.fallback.explain(entry, [code]);
+      await this.logInference(
+        trace,
+        entry,
+        code,
+        "error",
+        Date.now() - started,
+        fallbackText,
+        error instanceof Error ? error.message : "request failed"
+      );
+      return fallbackText;
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  private async logInference(
+    trace: ModelInferenceTrace | undefined,
+    entry: WatchlistEntry,
+    language: string,
+    status: "ok" | "fallback" | "error",
+    latencyMs: number,
+    responsePreview: string,
+    errorMessage?: string
+  ): Promise<void> {
+    if (this.inferenceLog === undefined || trace === undefined) {
+      return;
+    }
+    await this.inferenceLog.record({
+      trace,
+      entry,
+      language,
+      model: this.config.model,
+      status,
+      latencyMs,
+      responsePreview: responsePreview.slice(0, 400),
+      ...(errorMessage === undefined ? {} : { errorMessage })
+    });
   }
 }
 

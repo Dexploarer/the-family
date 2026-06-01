@@ -23,14 +23,19 @@ import {
   handleAdminFlagsPatch,
   handleAdminGroupReport,
   handleAdminGroups,
+  handleAdminModelAnalytics,
+  handleAdminModelLogs,
   handleAdminOverview,
+  handleAdminSafeQueue,
   handleAdminUsage,
   handleAdminUsersDelete,
   handleAdminUsersInvite,
   handleAdminUsersList
 } from "./adminApi.js";
 import {
+  handleAdminAuthAcceptInvite,
   handleAdminAuthCheckEmail,
+  handleAdminAuthInvitePreview,
   handleAdminAuthLogin,
   handleAdminAuthLogout,
   handleAdminAuthMe,
@@ -171,6 +176,12 @@ export function createFetchHandler(appState: App, config: AppConfig): (request: 
       if (request.method === "POST" && url.pathname === "/api/admin/auth/set-password") {
         return route(async () => handleAdminAuthSetPassword(appState, config, request));
       }
+      if (request.method === "GET" && url.pathname === "/api/admin/auth/invite-preview") {
+        return route(async () => handleAdminAuthInvitePreview(appState, config, url));
+      }
+      if (request.method === "POST" && url.pathname === "/api/admin/auth/accept-invite") {
+        return route(async () => handleAdminAuthAcceptInvite(appState, config, request));
+      }
       if (request.method === "POST" && url.pathname === "/api/admin/auth/logout") {
         return route(async () => handleAdminAuthLogout(appState, config, request));
       }
@@ -192,6 +203,15 @@ export function createFetchHandler(appState: App, config: AppConfig): (request: 
       }
       if (request.method === "GET" && url.pathname === "/api/admin/usage") {
         return route(async () => handleAdminUsage(appState, config, request, url));
+      }
+      if (request.method === "GET" && url.pathname === "/api/admin/safe-queue") {
+        return route(async () => handleAdminSafeQueue(appState, config, request));
+      }
+      if (request.method === "GET" && url.pathname === "/api/admin/model/logs") {
+        return route(async () => handleAdminModelLogs(appState, config, request, url));
+      }
+      if (request.method === "GET" && url.pathname === "/api/admin/model/analytics") {
+        return route(async () => handleAdminModelAnalytics(appState, config, request, url));
       }
       if (request.method === "GET" && url.pathname === "/api/admin/flags") {
         return route(async () => handleAdminFlagsGet(appState, config, request));

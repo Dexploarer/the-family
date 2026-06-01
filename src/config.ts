@@ -46,7 +46,9 @@ const EnvSchema = z
     PLATFORM_OPS_TOKEN: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(16).optional()),
     ADMIN_BOOTSTRAP_EMAIL: z.preprocess((value) => (value === "" ? undefined : value), z.string().email().optional()),
     ADMIN_SESSION_SECRET: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(32).optional()),
-    ADMIN_SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(7)
+    ADMIN_SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(7),
+    AGENTMAIL_API_KEY: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(1).optional()),
+    AGENTMAIL_INBOX_ID: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(1).optional())
   })
   .superRefine((env, ctx) => {
     if (env.STORAGE_DRIVER === "postgres" && env.DATABASE_URL === undefined) {
@@ -101,6 +103,8 @@ export type AppConfig = {
   adminBootstrapEmail?: string;
   adminSessionSecret?: string;
   adminSessionTtlDays: number;
+  agentMailApiKey?: string;
+  agentMailInboxId?: string;
 };
 
 export function loadConfig(): AppConfig {
@@ -152,6 +156,8 @@ export function loadConfig(): AppConfig {
     ...(env.PLATFORM_OPS_TOKEN === undefined ? {} : { platformOpsToken: env.PLATFORM_OPS_TOKEN }),
     ...(env.ADMIN_BOOTSTRAP_EMAIL === undefined ? {} : { adminBootstrapEmail: env.ADMIN_BOOTSTRAP_EMAIL }),
     ...(env.ADMIN_SESSION_SECRET === undefined ? {} : { adminSessionSecret: env.ADMIN_SESSION_SECRET }),
-    adminSessionTtlDays: env.ADMIN_SESSION_TTL_DAYS
+    adminSessionTtlDays: env.ADMIN_SESSION_TTL_DAYS,
+    ...(env.AGENTMAIL_API_KEY === undefined ? {} : { agentMailApiKey: env.AGENTMAIL_API_KEY }),
+    ...(env.AGENTMAIL_INBOX_ID === undefined ? {} : { agentMailInboxId: env.AGENTMAIL_INBOX_ID })
   };
 }

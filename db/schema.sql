@@ -196,3 +196,38 @@ create table if not exists admin_sessions (
 
 create index if not exists admin_sessions_user_id_idx on admin_sessions(user_id);
 create index if not exists admin_sessions_expires_at_idx on admin_sessions(expires_at);
+
+create table if not exists admin_invites (
+  id text primary key,
+  email text not null,
+  role text not null check (role in ('super_admin', 'admin')),
+  token_hash text not null unique,
+  created_by_user_id text references admin_users(id) on delete set null,
+  expires_at timestamptz not null,
+  accepted_at timestamptz,
+  created_at timestamptz not null
+);
+
+create index if not exists admin_invites_email_idx on admin_invites(email);
+create index if not exists admin_invites_expires_at_idx on admin_invites(expires_at);
+
+create table if not exists model_inference_logs (
+  id text primary key,
+  source text not null,
+  model text not null,
+  status text not null check (status in ('ok', 'fallback', 'error')),
+  telegram_user_id text,
+  chat_id text,
+  token_symbol text,
+  token_address text,
+  language text,
+  latency_ms integer not null,
+  prompt_preview text not null,
+  response_preview text,
+  error_message text,
+  created_at timestamptz not null
+);
+
+create index if not exists model_inference_logs_created_at_idx on model_inference_logs(created_at desc);
+create index if not exists model_inference_logs_chat_created_at_idx on model_inference_logs(chat_id, created_at desc);
+create index if not exists model_inference_logs_token_created_at_idx on model_inference_logs(token_address, created_at desc);

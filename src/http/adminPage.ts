@@ -71,6 +71,13 @@ export function renderAdminPage(branding: BrandingSnapshot): string {
     .error { color: #ff8a9c; margin-top: 8px; }
     .hidden { display: none !important; }
     pre { white-space: pre-wrap; word-break: break-word; font-size: 12px; color: var(--muted); max-height: 320px; overflow: auto; }
+    .report-section { margin-bottom: 18px; }
+    .report-section h3 { font-family: var(--serif); font-size: 18px; margin-bottom: 8px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-bottom: 10px; }
+    .stat-grid div { border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; }
+    .stat-grid span { display: block; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .invite-box { margin-top: 12px; padding: 12px; border: 1px dashed var(--line); border-radius: 4px; word-break: break-all; }
+    .subtable { margin-top: 8px; }
     .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
     .field { flex: 1 1 220px; }
     label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
@@ -91,6 +98,8 @@ export function renderAdminPage(branding: BrandingSnapshot): string {
         <button type="button" class="tab active" data-tab="overview">Overview</button>
         <button type="button" class="tab" data-tab="flags">Flags</button>
         <button type="button" class="tab" data-tab="groups">Groups</button>
+        <button type="button" class="tab" data-tab="safe">Safe queue</button>
+        <button type="button" class="tab" data-tab="model">eliza-1</button>
         <button type="button" class="tab" data-tab="activity">Activity</button>
         <button type="button" class="tab hidden" data-tab="branding" data-super-only>Branding</button>
         <button type="button" class="tab hidden" data-tab="team" data-super-only>Team</button>
@@ -114,6 +123,11 @@ export function renderAdminPage(branding: BrandingSnapshot): string {
         <button type="button" class="primary" id="setPasswordBtn">Set password &amp; enter</button>
         <button type="button" id="backSetBtn">Back</button>
       </div>
+      <div id="inviteAcceptStep" class="hidden">
+        <p class="muted" id="inviteAcceptHint">Accept your invite and choose a password.</p>
+        <input id="invitePasswordInput" type="password" autocomplete="new-password" placeholder="Choose a password (12+ chars)" />
+        <button type="button" class="primary" id="inviteAcceptBtn">Accept invite</button>
+      </div>
       <p class="error hidden" id="loginError"></p>
     </section>
 
@@ -130,9 +144,25 @@ export function renderAdminPage(branding: BrandingSnapshot): string {
       <section id="tab-groups" class="hidden">
         <div class="panel">
           <h2>Registered groups</h2>
-          <table><thead><tr><th>Chat</th><th>Safe</th><th>Members</th><th>NAV (wei)</th><th>Last activity</th></tr></thead><tbody id="groupsTable"></tbody></table>
+          <table><thead><tr><th>Chat</th><th>Safe</th><th>Members</th><th>NAV</th><th>Last activity</th></tr></thead><tbody id="groupsTable"></tbody></table>
         </div>
-        <div class="panel hidden" id="groupDetail"><h2 id="groupDetailTitle">Group report</h2><pre id="groupDetailBody"></pre></div>
+        <div class="panel hidden" id="groupDetail"><h2 id="groupDetailTitle">Group report</h2><div id="groupDetailBody"></div></div>
+      </section>
+      <section id="tab-safe" class="hidden">
+        <div class="panel">
+          <h2>Safe &amp; proposal queue</h2>
+          <p class="muted">Trades, launches, and withdrawals waiting on prepare/sign/execute.</p>
+          <table><thead><tr><th>Stage</th><th>Kind</th><th>Group</th><th>Label</th><th>Detail</th><th>Links</th></tr></thead><tbody id="safeQueueTable"></tbody></table>
+        </div>
+      </section>
+      <section id="tab-model" class="hidden">
+        <div class="grid" id="modelCards"></div>
+        <div class="panel"><h2>Top tokens (24h)</h2><div id="modelTopTokens" class="muted">Loading…</div></div>
+        <div class="panel"><h2>Top callers (24h)</h2><div id="modelTopCallers" class="muted">Loading…</div></div>
+        <div class="panel">
+          <h2>Inference log (24h)</h2>
+          <table><thead><tr><th>When</th><th>Status</th><th>Source</th><th>Token</th><th>User</th><th>Group</th><th>ms</th><th>Trajectory</th></tr></thead><tbody id="modelLogTable"></tbody></table>
+        </div>
       </section>
       <section id="tab-activity" class="hidden">
         <div class="panel">
@@ -162,7 +192,8 @@ export function renderAdminPage(branding: BrandingSnapshot): string {
             <div class="field"><label>Email</label><input id="inviteEmail" type="email" placeholder="teammate@company.com" /></div>
             <div class="field"><label>Role</label><select id="inviteRole"><option value="admin">Admin</option><option value="super_admin">Super admin</option></select></div>
           </div>
-          <button type="button" class="primary" id="inviteBtn">Send invite</button>
+          <button type="button" class="primary" id="inviteBtn">Create invite link</button>
+          <div id="inviteResult" class="invite-box hidden"></div>
         </div>
         <div class="panel">
           <h2>Team</h2>
@@ -197,7 +228,44 @@ export function renderAdminPage(branding: BrandingSnapshot): string {
     }
     function clearError() { loginError.classList.add("hidden"); }
 
+    function esc(s) {
+      return String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+    }
     function fmtTime(iso) { return new Date(iso).toLocaleString(); }
+    function weiToBnb(wei) {
+      if (!wei || wei === "—") return "—";
+      try {
+        const v = Number(wei) / 1e18;
+        return v.toLocaleString(undefined, { maximumFractionDigits: 6 }) + " BNB";
+      } catch { return wei; }
+    }
+    function renderReportSection(section) {
+      let html = '<div class="report-section"><h3>' + esc(section.title) + '</h3>';
+      if (section.stats && section.stats.length) {
+        html += '<div class="stat-grid">' + section.stats.map((s) =>
+          '<div><span>' + esc(s.label) + '</span>' + esc(s.value) + '</div>'
+        ).join("") + '</div>';
+      }
+      if (section.tables) {
+        for (const table of section.tables) {
+          html += '<div class="subtable"><table><thead><tr>' +
+            table.headers.map((h) => '<th>' + esc(h) + '</th>').join("") + '</tr></thead><tbody>' +
+            (table.rows.length ? table.rows.map((row) =>
+              '<tr>' + row.map((cell) => '<td>' + esc(cell) + '</td>').join("") + '</tr>'
+            ).join("") : '<tr><td colspan="' + table.headers.length + '" class="muted">None</td></tr>') +
+            '</tbody></table></div>';
+        }
+      }
+      if (section.note) html += '<p class="muted">' + esc(section.note) + '</p>';
+      return html + '</div>';
+    }
+    function renderReportView(view) {
+      let html = renderReportSection(view.summary);
+      if (view.pool) html += renderReportSection(view.pool);
+      html += renderReportSection(view.usage);
+      html += '<p class="muted"><a href="' + esc(view.links.poolUrl) + '" target="_blank" rel="noopener">Open pool mini-app</a></p>';
+      return html;
+    }
     function usageRows(target, rows) {
       target.innerHTML = rows.map((row) =>
         "<tr><td>" + fmtTime(row.createdAt) + "</td><td><code>" + row.command + "</code></td><td>" + row.telegramUserId + "</td><td>" + (row.chatId || "—") + "</td></tr>"
@@ -209,7 +277,7 @@ export function renderAdminPage(branding: BrandingSnapshot): string {
       const p = data.platform;
       document.getElementById("overviewCards").innerHTML = [
         ["Groups", p.groups], ["Members", p.totalMembers], ["DAU (24h)", p.dau24h],
-        ["TVL (wei)", p.totalTvlWei], ["Deposits 24h", p.depositVolume24hWei], ["Withdrawals 24h", p.withdrawalVolume24hWei]
+        ["TVL", weiToBnb(p.totalTvlWei)], ["Deposits 24h", weiToBnb(p.depositVolume24hWei)], ["Withdrawals 24h", weiToBnb(p.withdrawalVolume24hWei)]
       ].map(([label, value]) => '<div class="card"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>').join("");
       document.getElementById("topCommands").innerHTML = (p.topCommands || []).map((row) => "<div><code>" + row.command + "</code> — " + row.count + "</div>").join("") || "No commands yet";
       usageRows(document.getElementById("recentUsage"), data.recentUsage || []);
@@ -237,7 +305,7 @@ export function renderAdminPage(branding: BrandingSnapshot): string {
       const data = await api("/api/admin/groups");
       const tbody = document.getElementById("groupsTable");
       tbody.innerHTML = (data.groups || []).map((group) =>
-        '<tr data-chat-id="' + group.chatId + '"><td>' + group.chatId + '</td><td><code>' + group.safeAddress.slice(0, 10) + '…</code></td><td>' + group.memberCount + '</td><td>' + (group.navWei || "—") + '</td><td>' + (group.lastActivityAt ? fmtTime(group.lastActivityAt) : "—") + '</td></tr>'
+        '<tr data-chat-id="' + group.chatId + '"><td>' + group.chatId + '</td><td><code>' + group.safeAddress.slice(0, 10) + '…</code></td><td>' + group.memberCount + '</td><td>' + weiToBnb(group.navWei || "—") + '</td><td>' + (group.lastActivityAt ? fmtTime(group.lastActivityAt) : "—") + '</td></tr>'
       ).join("") || "<tr><td colspan='5' class='muted'>No groups yet</td></tr>";
       tbody.querySelectorAll("[data-chat-id]").forEach((row) => {
         row.addEventListener("click", async () => {
@@ -245,9 +313,47 @@ export function renderAdminPage(branding: BrandingSnapshot): string {
           const report = await api("/api/admin/groups/" + encodeURIComponent(chatId));
           document.getElementById("groupDetail").classList.remove("hidden");
           document.getElementById("groupDetailTitle").textContent = "Group " + chatId;
-          document.getElementById("groupDetailBody").textContent = JSON.stringify(report, null, 2);
+          document.getElementById("groupDetailBody").innerHTML = renderReportView(report.view);
         });
       });
+    }
+
+    async function loadSafeQueue() {
+      const data = await api("/api/admin/safe-queue");
+      const tbody = document.getElementById("safeQueueTable");
+      tbody.innerHTML = (data.items || []).map((item) => {
+        const links = [
+          item.signUrl ? '<a href="' + esc(item.signUrl) + '" target="_blank" rel="noopener">Sign</a>' : "",
+          item.executeUrl ? '<a href="' + esc(item.executeUrl) + '" target="_blank" rel="noopener">Execute</a>' : ""
+        ].filter(Boolean).join(" · ") || "—";
+        return '<tr><td>' + esc(item.stage) + '</td><td>' + esc(item.kind) + '</td><td>' + esc(item.chatId) +
+          '</td><td>' + esc(item.label) + '</td><td>' + esc(item.detail) + '</td><td>' + links + '</td></tr>';
+      }).join("") || "<tr><td colspan='6' class='muted'>Queue is empty</td></tr>";
+    }
+
+    async function loadModel() {
+      const [analytics, logs] = await Promise.all([
+        api("/api/admin/model/analytics?hours=24"),
+        api("/api/admin/model/logs?hours=24")
+      ]);
+      const a = analytics.analytics;
+      document.getElementById("modelCards").innerHTML = [
+        ["Calls (24h)", a.total], ["Avg latency", a.avgLatencyMs + " ms"],
+        ["OK", a.byStatus.ok || 0], ["Fallback", a.byStatus.fallback || 0], ["Error", a.byStatus.error || 0]
+      ].map(([label, value]) => '<div class="card"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>').join("");
+      document.getElementById("modelTopTokens").innerHTML = (a.topTokens || []).map((t) =>
+        "<div><code>" + esc(t.tokenSymbol) + "</code> · " + t.count + " calls</div>"
+      ).join("") || "No model calls yet";
+      document.getElementById("modelTopCallers").innerHTML = (a.topCallers || []).map((c) =>
+        "<div>User " + esc(c.telegramUserId) + " · " + c.count + "</div>"
+      ).join("") || "No callers yet";
+      const tbody = document.getElementById("modelLogTable");
+      tbody.innerHTML = (logs.logs || []).map((log) =>
+        '<tr><td>' + fmtTime(log.createdAt) + '</td><td>' + esc(log.status) + '</td><td>' + esc(log.source) +
+        '</td><td>' + esc(log.tokenSymbol || "—") + '</td><td>' + esc(log.telegramUserId || "—") + '</td><td>' +
+        esc(log.chatId || "—") + '</td><td>' + log.latencyMs + '</td><td><span class="muted">' +
+        esc(log.promptPreview) + '</span><br/>' + esc((log.responsePreview || log.errorMessage || "").slice(0, 120)) + '</td></tr>'
+      ).join("") || "<tr><td colspan='8' class='muted'>No inference logs yet — open a token in /nancy</td></tr>";
     }
 
     async function loadActivity() {
@@ -285,6 +391,8 @@ export function renderAdminPage(branding: BrandingSnapshot): string {
       if (tab === "overview") await loadOverview();
       if (tab === "flags") await loadFlags();
       if (tab === "groups") await loadGroups();
+      if (tab === "safe") await loadSafeQueue();
+      if (tab === "model") await loadModel();
       if (tab === "activity") await loadActivity();
       if (tab === "branding") await loadBranding();
       if (tab === "team") await loadTeam();
@@ -370,7 +478,7 @@ export function renderAdminPage(branding: BrandingSnapshot): string {
         document.querySelectorAll(".tab").forEach((el) => el.classList.remove("active"));
         tabBtn.classList.add("active");
         const tab = tabBtn.getAttribute("data-tab");
-        ["overview", "flags", "groups", "activity", "branding", "team"].forEach((name) => {
+        ["overview", "flags", "groups", "safe", "model", "activity", "branding", "team"].forEach((name) => {
           document.getElementById("tab-" + name).classList.toggle("hidden", name !== tab);
         });
         await refresh(tab);
@@ -394,22 +502,57 @@ export function renderAdminPage(branding: BrandingSnapshot): string {
     });
 
     document.getElementById("inviteBtn").addEventListener("click", async () => {
-      await api("/api/admin/users", {
+      const result = await api("/api/admin/users", {
         method: "POST",
         body: JSON.stringify({
           email: document.getElementById("inviteEmail").value,
           role: document.getElementById("inviteRole").value
         })
       });
+      const box = document.getElementById("inviteResult");
+      box.classList.remove("hidden");
+      box.innerHTML = (result.emailSent ? "<p>Invite email sent via AgentMail.</p>" : "<p>Copy this link for your teammate (set <code>AGENTMAIL_API_KEY</code> to email automatically):</p>") +
+        '<p><a href="' + esc(result.inviteUrl) + '">' + esc(result.inviteUrl) + '</a></p>';
       document.getElementById("inviteEmail").value = "";
       await loadTeam();
+    });
+
+    let inviteToken = new URLSearchParams(location.search).get("invite");
+    async function startInviteAccept() {
+      if (!inviteToken) return;
+      loginView.classList.remove("hidden");
+      dashboard.classList.add("hidden");
+      document.getElementById("emailStep").classList.add("hidden");
+      document.getElementById("passwordStep").classList.add("hidden");
+      document.getElementById("setPasswordStep").classList.add("hidden");
+      document.getElementById("inviteAcceptStep").classList.remove("hidden");
+      document.getElementById("loginTitle").textContent = "Accept invite";
+      try {
+        const preview = await api("/api/admin/auth/invite-preview?token=" + encodeURIComponent(inviteToken));
+        currentEmail = preview.email;
+        document.getElementById("inviteAcceptHint").textContent = "Set a password for " + preview.email + " (" + preview.role + ").";
+        if (preview.expired) showError("This invite link has expired.");
+      } catch (error) {
+        showError(error.message || "Invalid invite link");
+      }
+    }
+    document.getElementById("inviteAcceptBtn").addEventListener("click", async () => {
+      clearError();
+      try {
+        const result = await api("/api/admin/auth/accept-invite", {
+          method: "POST",
+          body: JSON.stringify({ token: inviteToken, password: document.getElementById("invitePasswordInput").value })
+        });
+        history.replaceState({}, "", "/admin");
+        await enterDashboard(result.user);
+      } catch (error) { showError(error.message || "Could not accept invite"); }
     });
 
     try {
       const session = await api("/api/admin/auth/me");
       await enterDashboard(session.user);
     } catch {
-      // not signed in
+      await startInviteAccept();
     }
   </script>
 </body>

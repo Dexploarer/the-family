@@ -5,6 +5,8 @@ import { buildPoolAnalytics } from "./poolAnalyticsBuilder.js";
 import type { PoolService, PlatformStats } from "./poolService.js";
 import type { PlatformSettingsService } from "./platformSettings.js";
 import { serializePoolAnalytics, type PoolAnalyticsResponse } from "../http/poolAnalyticsResponse.js";
+import { formatBnb } from "../utils/evm.js";
+import { buildAdminGroupReportView, type AdminGroupReportView } from "./adminGroupReportView.js";
 
 export type GroupSummary = {
   chatId: string;
@@ -44,13 +46,28 @@ export type AdminOverview = {
   recentUsage: SerializedUsageEvent[];
 };
 
+export type SafeQueueItem = {
+  stage: "awaiting_prepare" | "awaiting_signatures" | "submitted";
+  kind: "trade" | "flap-launch" | "withdrawal";
+  id: string;
+  sourceId: string;
+  chatId: string;
+  label: string;
+  detail: string;
+  status: string;
+  createdAt: string;
+  signUrl?: string;
+  executeUrl?: string;
+};
+
 export class AdminDashboardService {
   constructor(
     private readonly repository: Repository,
     private readonly poolRepository: PoolRepository,
     private readonly poolService: PoolService,
     private readonly platformSettings: PlatformSettingsService,
-    private readonly withdrawalFeeBps: number
+    private readonly withdrawalFeeBps: number,
+    private readonly publicBaseUrl?: string
   ) {}
 
   async getOverview(): Promise<AdminOverview> {
@@ -74,6 +91,11 @@ export class AdminDashboardService {
       summaries.push(await this.buildGroupSummary(wallet.chatId, wallet.safeAddress, wallet.threshold, wallet.owners.length));
     }
     return summaries.sort((a, b) => (b.lastActivityAt ?? "").localeCompare(a.lastActivityAt ?? ""));
+  }
+
+  async getGroupReportView(chatId: ChatId): Promise<AdminGroupReportView> {
+    const report = await this.getGroupReport(chatId);
+    return buildAdminGroupReportView(report, this.publicBaseUrl);
   }
 
   async getGroupReport(chatId: ChatId): Promise<GroupReport> {
@@ -112,6 +134,92 @@ export class AdminDashboardService {
         createdAt: entry.createdAt.toISOString()
       }))
     };
+  }
+
+  async listSafeQueue(limit = 80): Promise<SafeQueueItem[]> {
+    const base = this.publicBaseUrl?.replace(/\/+$/, "") ?? "";
+    const submissions = await this.repository.listSafeSubmissions(limit);
+    const submittedSourceIds = new Set(submissions.map((row) => `${row.sourceType}:${row.sourceId}`));
+    const items: SafeQueueItem[] = [];
+
+    for (const submission of submissions) {
+      const signUrl = base.length > 0 ? `${base}/sign/${encodeURIComponent(submission.id)}` : undefined;
+      const executeUrl = base.length > 0 ? `${base}/execute/${encodeURIComponent(submission.id)}` : undefined;
+      items.push({
+        stage: submission.status === "submitted" ? "submitted" : "awaiting_signatures",
+        kind: submission.sourceType,
+        id: submission.id,
+        sourceId: submission.sourceId,
+        chatId: submission.chatId,
+        label: `${submission.sourceType} · ${submission.id}`,
+        detail: `Safe ${submission.safeAddress} · tx ${submission.safeTxHash}`,
+        status: submission.status,
+        createdAt: submission.createdAt.toISOString(),
+        ...(signUrl === undefined ? {} : { signUrl }),
+        ...(executeUrl === undefined ? {} : { executeUrl })
+      });
+    }
+
+    const trades = await this.repository.listTradeProposals(50);
+    for (const trade of trades) {
+      const key = `trade:${trade.id}`;
+      if (submittedSourceIds.has(key)) {
+        continue;
+      }
+      items.push({
+        stage: "awaiting_prepare",
+        kind: "trade",
+        id: trade.id,
+        sourceId: trade.id,
+        chatId: trade.chatId,
+        label: `Trade ${trade.id}`,
+        detail: `${trade.route} · ${formatBnb(trade.inputAmountWei)} · ${trade.tokenAddress}`,
+        status: trade.status,
+        createdAt: trade.createdAt.toISOString()
+      });
+    }
+
+    const launches = await this.repository.listFlapLaunches(50);
+    for (const launch of launches) {
+      const key = `flap-launch:${launch.id}`;
+      if (submittedSourceIds.has(key)) {
+        continue;
+      }
+      items.push({
+        stage: "awaiting_prepare",
+        kind: "flap-launch",
+        id: launch.id,
+        sourceId: launch.id,
+        chatId: launch.chatId,
+        label: `Flap ${launch.symbol}`,
+        detail: `${launch.name} · initial ${formatBnb(launch.initialBuyWei)}`,
+        status: "created",
+        createdAt: launch.createdAt.toISOString()
+      });
+    }
+
+    const wallets = await this.repository.listGroupWallets();
+    for (const wallet of wallets) {
+      const withdrawals = await this.poolRepository.listPoolWithdrawalRequests(wallet.chatId, "queued");
+      for (const withdrawal of withdrawals) {
+        if (withdrawal.safeSubmissionId !== undefined) {
+          continue;
+        }
+        items.push({
+          stage: "awaiting_prepare",
+          kind: "withdrawal",
+          id: withdrawal.id,
+          sourceId: withdrawal.id,
+          chatId: withdrawal.chatId,
+          label: `Withdrawal ${withdrawal.id}`,
+          detail: `${formatBnb(withdrawal.grossAmountWei)} gross → ${withdrawal.recipientAddress}`,
+          status: withdrawal.status,
+          createdAt: withdrawal.requestedAt.toISOString()
+        });
+      }
+    }
+
+    return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit);
   }
 
   async listUsage(options?: { chatId?: ChatId; hours?: number; limit?: number }): Promise<SerializedUsageEvent[]> {
