@@ -17,7 +17,6 @@ const EnvSchema = z
     DATABASE_URL: z.string().url().optional(),
     SAFE_TRANSACTION_SERVICE_URL: z.preprocess((value) => (value === "" ? undefined : value), z.string().url().optional()),
     SAFE_API_KEY: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(1).optional()),
-    SAFE_EXECUTOR_PRIVATE_KEY: z.preprocess((value) => (value === "" ? undefined : value), z.string().regex(/^0x[0-9a-fA-F]{64}$/).optional()),
     DEX_DEADLINE_SECONDS: z.coerce.number().int().min(60).max(604800),
     HTTP_PORT: z.coerce.number().int().min(1).max(65535),
     PUBLIC_BASE_URL: z.preprocess((value) => (value === "" ? undefined : value), z.string().url().optional()),
@@ -41,7 +40,13 @@ const EnvSchema = z
     WATCHLIST_DEFAULT_SIZE_BNB: z.coerce.number().min(0.0001).default(0.1),
     MAX_EXIT_SLIPPAGE_BPS: z.coerce.number().int().min(0).max(10000).default(1500),
     MIN_LP_LOCKED_PERCENT: z.coerce.number().min(0).max(100).default(50),
-    MAX_LP_HOLDER_TOP_PERCENT: z.coerce.number().min(0).max(100).default(50)
+    MAX_LP_HOLDER_TOP_PERCENT: z.coerce.number().min(0).max(100).default(50),
+    VIDEO_ENABLED: z.enum(["on", "off"]).default("off"),
+    VOICE_ENABLED: z.enum(["on", "off"]).default("off"),
+    PLATFORM_OPS_TOKEN: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(16).optional()),
+    ADMIN_BOOTSTRAP_EMAIL: z.preprocess((value) => (value === "" ? undefined : value), z.string().email().optional()),
+    ADMIN_SESSION_SECRET: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(32).optional()),
+    ADMIN_SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(7)
   })
   .superRefine((env, ctx) => {
     if (env.STORAGE_DRIVER === "postgres" && env.DATABASE_URL === undefined) {
@@ -66,7 +71,6 @@ export type AppConfig = {
   databaseUrl?: string;
   safeTransactionServiceUrl?: string;
   safeApiKey?: string;
-  safeExecutorPrivateKey?: `0x${string}`;
   dexDeadlineSeconds: number;
   httpPort: number;
   publicBaseUrl?: string;
@@ -91,6 +95,12 @@ export type AppConfig = {
   maxExitSlippageBps: number;
   minLpLockedPercent: number;
   maxLpHolderTopPercent: number;
+  videoEnabledDefault: boolean;
+  voiceEnabledDefault: boolean;
+  platformOpsToken?: string;
+  adminBootstrapEmail?: string;
+  adminSessionSecret?: string;
+  adminSessionTtlDays: number;
 };
 
 export function loadConfig(): AppConfig {
@@ -108,7 +118,6 @@ export function loadConfig(): AppConfig {
     ...(env.DATABASE_URL === undefined ? {} : { databaseUrl: env.DATABASE_URL }),
     ...(env.SAFE_TRANSACTION_SERVICE_URL === undefined ? {} : { safeTransactionServiceUrl: env.SAFE_TRANSACTION_SERVICE_URL }),
     ...(env.SAFE_API_KEY === undefined ? {} : { safeApiKey: env.SAFE_API_KEY }),
-    ...(env.SAFE_EXECUTOR_PRIVATE_KEY === undefined ? {} : { safeExecutorPrivateKey: env.SAFE_EXECUTOR_PRIVATE_KEY as `0x${string}` }),
     dexDeadlineSeconds: env.DEX_DEADLINE_SECONDS,
     httpPort: env.HTTP_PORT,
     ...(env.PUBLIC_BASE_URL === undefined ? {} : { publicBaseUrl: env.PUBLIC_BASE_URL }),
@@ -137,6 +146,12 @@ export function loadConfig(): AppConfig {
     watchlistDefaultSizeBnb: env.WATCHLIST_DEFAULT_SIZE_BNB,
     maxExitSlippageBps: env.MAX_EXIT_SLIPPAGE_BPS,
     minLpLockedPercent: env.MIN_LP_LOCKED_PERCENT,
-    maxLpHolderTopPercent: env.MAX_LP_HOLDER_TOP_PERCENT
+    maxLpHolderTopPercent: env.MAX_LP_HOLDER_TOP_PERCENT,
+    videoEnabledDefault: env.VIDEO_ENABLED === "on",
+    voiceEnabledDefault: env.VOICE_ENABLED === "on",
+    ...(env.PLATFORM_OPS_TOKEN === undefined ? {} : { platformOpsToken: env.PLATFORM_OPS_TOKEN }),
+    ...(env.ADMIN_BOOTSTRAP_EMAIL === undefined ? {} : { adminBootstrapEmail: env.ADMIN_BOOTSTRAP_EMAIL }),
+    ...(env.ADMIN_SESSION_SECRET === undefined ? {} : { adminSessionSecret: env.ADMIN_SESSION_SECRET }),
+    adminSessionTtlDays: env.ADMIN_SESSION_TTL_DAYS
   };
 }

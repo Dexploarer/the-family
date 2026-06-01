@@ -169,6 +169,26 @@ export type UsageEvent = {
   command: string;
   telegramUserId: string;
   createdAt: Date;
+  chatId?: ChatId;
+};
+
+export type AdminRole = "super_admin" | "admin";
+
+export type AdminUser = {
+  id: string;
+  email: string;
+  passwordHash: string | null;
+  role: AdminRole;
+  createdAt: Date;
+  updatedAt: Date;
+  lastLoginAt: Date | null;
+};
+
+export type AdminSession = {
+  id: string;
+  userId: string;
+  expiresAt: Date;
+  createdAt: Date;
 };
 
 export type PoolLedgerEntryType =

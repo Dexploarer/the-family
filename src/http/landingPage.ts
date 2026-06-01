@@ -1,17 +1,29 @@
-import { brandHead } from "./brand.js";
+import { brandCssVars, brandHead } from "./brand.js";
+import type { BrandingSnapshot } from "../services/brandingService.js";
 
 // Public landing page at "/". Art-deco luxury: molten gold on near-black, a live
 // gold-dust canvas, Lenis buttery smooth-scroll, staggered reveals. Telegram-aware
 // (expands + themes if opened inside Telegram); otherwise drives to the bot.
-export function renderLandingPage(botUsername = "nancy_bsc_bot"): string {
+export function renderLandingPage(
+  botUsername = "nancy_bsc_bot",
+  options?: { showAdminLink?: boolean; branding?: BrandingSnapshot }
+): string {
+  const branding = options?.branding;
+  const productName = branding?.productName ?? "Nancy";
+  const tagline = branding?.tagline ?? "the Golden Girl of Binance";
+  const footerNote = branding?.footerNote ?? "Nancy is infrastructure only — no profit, token, or execution guarantees.";
   const telegramUrl = `https://t.me/${botUsername}`;
+  const adminLink =
+    options?.showAdminLink === true
+      ? ' · <a href="/admin">Operator</a>'
+      : "";
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  ${brandHead()}
-  <title>Nancy — the Golden Girl of Binance</title>
+  ${brandHead(branding)}
+  <title>${productName} — ${tagline}</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -121,6 +133,7 @@ export function renderLandingPage(botUsername = "nancy_bsc_bot"): string {
     .reveal { opacity: 0; transform: translateY(26px); transition: opacity .9s cubic-bezier(.16,.7,.3,1), transform .9s cubic-bezier(.16,.7,.3,1); }
     .reveal.in { opacity: 1; transform: none; }
     @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } #dust { display: none; } }
+    ${brandCssVars(branding)}
   </style>
 </head>
 <body>
@@ -129,7 +142,7 @@ export function renderLandingPage(botUsername = "nancy_bsc_bot"): string {
 
   <div class="wrap">
     <nav class="reveal">
-      <span class="mark gold">NANCY</span>
+      <span class="mark gold">${productName.toUpperCase()}</span>
       <span class="links"><a href="${telegramUrl}">Open in Telegram ↗</a></span>
     </nav>
 
@@ -140,7 +153,7 @@ export function renderLandingPage(botUsername = "nancy_bsc_bot"): string {
         <p class="deck reveal">A shared trading desk for your Telegram group — poured in gold, run on a Safe you control.</p>
         <p class="sub reveal">Pool BNB into share-based accounting, prepare token buys and Flap launches as Safe transactions your owners sign, and watch every share and PnL live. Nancy never holds your keys.</p>
         <div class="cta-row reveal">
-          <a class="btn" id="cta" href="${telegramUrl}">💛 Open Nancy in Telegram</a>
+          <a class="btn" id="cta" href="${telegramUrl}">💛 Open ${productName} in Telegram</a>
           <a class="btn-ghost" href="${telegramUrl}">@${botUsername}</a>
         </div>
       </div>
@@ -173,13 +186,13 @@ export function renderLandingPage(botUsername = "nancy_bsc_bot"): string {
 
     <section class="closer reveal">
       <h2>Step into the <span class="gold">gold</span>.</h2>
-      <a class="btn" href="${telegramUrl}">💛 Open Nancy in Telegram</a>
+      <a class="btn" href="${telegramUrl}">💛 Open ${productName} in Telegram</a>
     </section>
 
     <div class="rule"></div>
     <footer>
-      <span>Nancy is infrastructure only — no profit, token, or execution guarantees.</span>
-      <span><a href="${telegramUrl}">@${botUsername}</a> · the Golden Girl of Binance</span>
+      <span>${footerNote}</span>
+      <span><a href="${telegramUrl}">@${botUsername}</a>${adminLink} · ${tagline}</span>
     </footer>
   </div>
 

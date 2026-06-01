@@ -39,16 +39,21 @@ function testConfig(): AppConfig {
     watchlistDefaultSizeBnb: 0.1,
     maxExitSlippageBps: 1500,
     minLpLockedPercent: 50,
-    maxLpHolderTopPercent: 50
+    maxLpHolderTopPercent: 50,
+    videoEnabledDefault: false,
+    voiceEnabledDefault: false,
+    adminSessionTtlDays: 7
   };
 }
 
 describe("HTTP fetch handler", () => {
-  it("serves /health", async () => {
+  it("serves /health and /api/health", async () => {
     const handler = createFetchHandler(buildApp(testConfig()), testConfig());
-    const response = await handler(new Request("http://test/health"));
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true });
+    for (const path of ["/health", "/api/health"]) {
+      const response = await handler(new Request(`http://test${path}`));
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ ok: true });
+    }
   });
 
   it("returns 404 for unknown routes", async () => {
@@ -226,5 +231,59 @@ describe("HTTP fetch handler", () => {
 
     expect(response.status).toBe(200);
     expect(body.status).toBe("submitted");
+  });
+
+  it("serves the operator dashboard shell", async () => {
+    const handler = createFetchHandler(buildApp(testConfig()), testConfig());
+    const response = await handler(new Request("http://test/admin"));
+    const html = await response.text();
+    expect(response.status).toBe(200);
+    expect(html).toContain("Operator Control");
+    expect(html).toContain("/api/admin/overview");
+  });
+
+  it("protects admin APIs when dashboard is not configured", async () => {
+    const handler = createFetchHandler(buildApp(testConfig()), testConfig());
+    const response = await handler(new Request("http://test/api/admin/overview"));
+    expect(response.status).toBe(503);
+  });
+
+  it("returns admin overview for legacy ops token", async () => {
+    const config = { ...testConfig(), platformOpsToken: "test-ops-token-secret" };
+    const handler = createFetchHandler(buildApp(config), config);
+    const response = await handler(
+      new Request("http://test/api/admin/overview", {
+        headers: { Authorization: "Bearer test-ops-token-secret" }
+      })
+    );
+    expect(response.status).toBe(200);
+  });
+
+  it("bootstraps email admin login with cookie session", async () => {
+    const config = {
+      ...testConfig(),
+      adminBootstrapEmail: "founder@example.com",
+      adminSessionSecret: "01234567890123456789012345678901"
+    };
+    const app = buildApp(config);
+    const handler = createFetchHandler(app, config);
+
+    const setPassword = await handler(
+      new Request("http://test/api/admin/auth/set-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "founder@example.com", password: "long-password-here" })
+      })
+    );
+    expect(setPassword.status).toBe(200);
+    const cookie = setPassword.headers.get("set-cookie");
+    expect(cookie).toContain("nancy_admin_session=");
+
+    const overview = await handler(
+      new Request("http://test/api/admin/overview", {
+        headers: { Cookie: cookie!.split(";")[0]! }
+      })
+    );
+    expect(overview.status).toBe(200);
   });
 });

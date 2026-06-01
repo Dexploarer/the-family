@@ -55,6 +55,9 @@ function testConfig(): AppConfig {
     watchlistDefaultSizeBnb: 0.1,
     maxExitSlippageBps: 1500,
     minLpLockedPercent: 50,
-    maxLpHolderTopPercent: 50
+    maxLpHolderTopPercent: 50,
+    videoEnabledDefault: false,
+    voiceEnabledDefault: false,
+    adminSessionTtlDays: 7
   };
 }

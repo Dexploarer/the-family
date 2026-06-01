@@ -14,6 +14,29 @@ import { saltNonceForSession } from "../services/safeDeploymentService.js";
 import { notifyGroup } from "../services/notify.js";
 import { renderPoolPage } from "./poolPage.js";
 import { renderLandingPage } from "./landingPage.js";
+import { renderAdminPage } from "./adminPage.js";
+import {
+  handleAdminBrandingGet,
+  handleAdminBrandingPatch,
+  handleAdminBrandingPublic,
+  handleAdminFlagsGet,
+  handleAdminFlagsPatch,
+  handleAdminGroupReport,
+  handleAdminGroups,
+  handleAdminOverview,
+  handleAdminUsage,
+  handleAdminUsersDelete,
+  handleAdminUsersInvite,
+  handleAdminUsersList
+} from "./adminApi.js";
+import {
+  handleAdminAuthCheckEmail,
+  handleAdminAuthLogin,
+  handleAdminAuthLogout,
+  handleAdminAuthMe,
+  handleAdminAuthSetPassword
+} from "./adminAuthApi.js";
+import { adminDashboardEnabled } from "./adminAuth.js";
 import { verifyTelegramInitData } from "./telegramInitData.js";
 import { serializePoolAnalytics } from "./poolAnalyticsResponse.js";
 import { configureTelegramBot } from "../bot/telegramCommands.js";
@@ -67,9 +90,20 @@ export function createFetchHandler(appState: App, config: AppConfig): (request: 
 
   async function dispatch(request: Request, url: URL): Promise<Response> {
     if (request.method === "GET" && url.pathname === "/") {
-      return new Response(renderLandingPage(), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+      return route(async () => {
+        const branding = await appState.branding.getSnapshot();
+        return new Response(renderLandingPage(undefined, { showAdminLink: adminDashboardEnabled(config), branding }), {
+          headers: { "Content-Type": "text/html; charset=utf-8" }
+        });
+      });
     }
-    if (request.method === "GET" && url.pathname === "/health") {
+    if (request.method === "GET" && url.pathname === "/admin") {
+      return route(async () => {
+        const branding = await appState.branding.getSnapshot();
+        return new Response(renderAdminPage(branding), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+      });
+    }
+    if (request.method === "GET" && (url.pathname === "/health" || url.pathname === "/api/health")) {
       return Response.json({ ok: true });
     }
     if (request.method === "GET" && url.pathname === "/og-image.png") {
@@ -126,6 +160,61 @@ export function createFetchHandler(appState: App, config: AppConfig): (request: 
     }
     if (request.method === "POST" && url.pathname.startsWith("/api/safe-executions/")) {
       return route(async () => submitSafeExecution(appState, request, url.pathname));
+    }
+    if (url.pathname.startsWith("/api/admin/")) {
+      if (request.method === "POST" && url.pathname === "/api/admin/auth/check-email") {
+        return route(async () => handleAdminAuthCheckEmail(appState, config, request));
+      }
+      if (request.method === "POST" && url.pathname === "/api/admin/auth/login") {
+        return route(async () => handleAdminAuthLogin(appState, config, request));
+      }
+      if (request.method === "POST" && url.pathname === "/api/admin/auth/set-password") {
+        return route(async () => handleAdminAuthSetPassword(appState, config, request));
+      }
+      if (request.method === "POST" && url.pathname === "/api/admin/auth/logout") {
+        return route(async () => handleAdminAuthLogout(appState, config, request));
+      }
+      if (request.method === "GET" && url.pathname === "/api/admin/auth/me") {
+        return route(async () => handleAdminAuthMe(appState, config, request));
+      }
+      if (request.method === "GET" && url.pathname === "/api/admin/branding/public") {
+        return route(async () => handleAdminBrandingPublic(appState));
+      }
+      if (request.method === "GET" && url.pathname === "/api/admin/overview") {
+        return route(async () => handleAdminOverview(appState, config, request));
+      }
+      if (request.method === "GET" && url.pathname === "/api/admin/groups") {
+        return route(async () => handleAdminGroups(appState, config, request));
+      }
+      if (request.method === "GET" && url.pathname.startsWith("/api/admin/groups/")) {
+        const chatId = requiredPathSuffix(url.pathname, "/api/admin/groups/");
+        return route(async () => handleAdminGroupReport(appState, config, request, chatId));
+      }
+      if (request.method === "GET" && url.pathname === "/api/admin/usage") {
+        return route(async () => handleAdminUsage(appState, config, request, url));
+      }
+      if (request.method === "GET" && url.pathname === "/api/admin/flags") {
+        return route(async () => handleAdminFlagsGet(appState, config, request));
+      }
+      if (request.method === "PATCH" && url.pathname === "/api/admin/flags") {
+        return route(async () => handleAdminFlagsPatch(appState, config, request));
+      }
+      if (request.method === "GET" && url.pathname === "/api/admin/branding") {
+        return route(async () => handleAdminBrandingGet(appState, config, request));
+      }
+      if (request.method === "PATCH" && url.pathname === "/api/admin/branding") {
+        return route(async () => handleAdminBrandingPatch(appState, config, request));
+      }
+      if (request.method === "GET" && url.pathname === "/api/admin/users") {
+        return route(async () => handleAdminUsersList(appState, config, request));
+      }
+      if (request.method === "POST" && url.pathname === "/api/admin/users") {
+        return route(async () => handleAdminUsersInvite(appState, config, request));
+      }
+      if (request.method === "DELETE" && url.pathname.startsWith("/api/admin/users/")) {
+        const userId = requiredPathSuffix(url.pathname, "/api/admin/users/");
+        return route(async () => handleAdminUsersDelete(appState, config, request, userId));
+      }
     }
     return Response.json({ error: "Not found" }, { status: 404 });
   }

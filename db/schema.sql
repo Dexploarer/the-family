@@ -162,8 +162,37 @@ create table if not exists usage_events (
 
 create index if not exists usage_events_created_at_idx on usage_events(created_at desc);
 
+alter table usage_events add column if not exists chat_id text;
+create index if not exists usage_events_chat_created_at_idx on usage_events(chat_id, created_at desc);
+
+create table if not exists platform_settings (
+  key text primary key,
+  value text not null,
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists group_settings (
   chat_id text primary key,
   languages text not null default 'en',
   updated_at timestamptz not null default now()
 );
+
+create table if not exists admin_users (
+  id text primary key,
+  email text not null unique,
+  password_hash text,
+  role text not null check (role in ('super_admin', 'admin')),
+  created_at timestamptz not null,
+  updated_at timestamptz not null,
+  last_login_at timestamptz
+);
+
+create table if not exists admin_sessions (
+  id text primary key,
+  user_id text not null references admin_users(id) on delete cascade,
+  expires_at timestamptz not null,
+  created_at timestamptz not null
+);
+
+create index if not exists admin_sessions_user_id_idx on admin_sessions(user_id);
+create index if not exists admin_sessions_expires_at_idx on admin_sessions(expires_at);

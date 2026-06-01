@@ -8,7 +8,6 @@ import { createFlapSalt, parseVaultRecipients } from "../chain/flapService.js";
 import {
   formatFlapLaunch,
   formatGeneratedWallet,
-  formatSafeDeployment,
   formatSafeCreationSession,
   formatSafeStatus,
   formatSafeSubmission,
@@ -29,12 +28,14 @@ import type { WatchlistService } from "../services/watchlistService.js";
 import type { ExplanationService } from "../services/explanationService.js";
 import { VoiceService, voiceSupported } from "../services/voiceService.js";
 import type { VoiceVideoService } from "../services/voiceVideoService.js";
-import { flapLaunchKeyboard, helpText, linkPageKeyboard, mainMenuKeyboard, nancyDetailKeyboard, nancyLangKeyboard, nancyListKeyboard, safeGroupKeyboard, safeSubmissionKeyboard, tradeProposalKeyboard } from "./keyboards.js";
+import type { PlatformSettingsService } from "../services/platformSettings.js";
+import { flapLaunchKeyboard, executePageKeyboard, helpText, linkPageKeyboard, mainMenuKeyboard, nancyDetailKeyboard, nancyLangKeyboard, nancyListKeyboard, safeGroupKeyboard, safeSubmissionKeyboard, tradeProposalKeyboard } from "./keyboards.js";
 import { normalizeLanguages } from "../domain/languages.js";
 import type { WatchlistEntry } from "../domain/types.js";
 import { formatWatchlist, formatWatchlistEntry } from "./watchlistView.js";
 import { registerSafeCallbacks } from "./safeCallbacks.js";
 import { registerPoolCommands } from "./poolCommands.js";
+import { registerPlatformCommands } from "./platformCommands.js";
 import { createId } from "../utils/ids.js";
 import { beginUnlink, handleMenuSelection, handlePromptBack, handlePromptCancel, handlePromptChoice, routePromptInput } from "./promptController.js";
 import {
@@ -64,6 +65,7 @@ export type BotDependencies = {
   explanationService: ExplanationService;
   voiceService?: VoiceService;
   voiceVideoService?: VoiceVideoService;
+  platformSettings: PlatformSettingsService;
   config: AppConfig;
 };
 
@@ -76,7 +78,14 @@ export function createBot(dependencies: BotDependencies): Bot {
     const userId = ctx.from?.id?.toString();
     if (label !== null && userId !== undefined) {
       try {
-        await dependencies.repository.saveUsageEvent({ id: createId("usage"), command: label, telegramUserId: userId, createdAt: new Date() });
+        const chatId = ctx.chat?.id?.toString();
+        await dependencies.repository.saveUsageEvent({
+          id: createId("usage"),
+          command: label,
+          telegramUserId: userId,
+          createdAt: new Date(),
+          ...(chatId === undefined ? {} : { chatId })
+        });
       } catch (error) {
         Logger.warn("[Usage] failed to record event", { err: error instanceof Error ? error : undefined });
       }
@@ -172,17 +181,9 @@ export function createBot(dependencies: BotDependencies): Bot {
 
   bot.command("safe_create", async (ctx) => {
     await handleUserCommand(ctx, "safe_create", async () => {
-      const chatId = requireChatId(ctx.chat?.id);
-      await requireGroupAdmin(ctx, chatId);
-      const parts = splitCommand(ctx.message?.text, 3);
-      const threshold = parsePositiveInteger(requiredPart(parts, 1), "threshold");
-      const owners = parts.slice(2).map(parseAddress);
-      if (threshold > owners.length) {
-        throw new UserInputError("Threshold cannot exceed owner count", { threshold, owners: owners.length });
-      }
-      const deployment = await dependencies.safeDeploymentService.createSafe({ owners, threshold });
-      const wallet = await dependencies.groupWalletService.setWallet(chatId, deployment.safeAddress, threshold, owners);
-      await ctx.reply([formatSafeDeployment(deployment), "", formatWallet(wallet)].join("\n"));
+      throw new UserInputError(
+        "Use /safe_group <threshold> to collect owners, then tap Deploy Safe to deploy from your wallet. Already have a Safe? Use /wallet_set."
+      );
     });
   });
 
@@ -395,11 +396,12 @@ export function createBot(dependencies: BotDependencies): Bot {
 
   bot.command("safe_execute", async (ctx) => {
     await handleUserCommand(ctx, "safe_execute", async () => {
-      const chatId = requireChatId(ctx.chat?.id);
-      await requireGroupAdmin(ctx, chatId);
       const parts = splitCommand(ctx.message?.text, 2);
-      const txHash = await dependencies.safeSubmissionService.execute(requiredPart(parts, 1));
-      await ctx.reply(`Safe execution submitted: ${txHash}`);
+      const submissionId = requiredPart(parts, 1);
+      await ctx.reply(
+        "Enough owners signed? Execute from your own wallet — you pay the gas, the bot holds no key.",
+        { reply_markup: executePageKeyboard(submissionId, dependencies.config.publicBaseUrl, ctx.chat?.type === "private") }
+      );
     });
   });
 
@@ -444,8 +446,12 @@ export function createBot(dependencies: BotDependencies): Bot {
           }
           const languages = normalizeLanguages((await dependencies.repository.getGroupLanguages(chatId)) ?? []);
           const explanation = await dependencies.explanationService.explain(entry, languages);
-          const voiceAvailable = dependencies.voiceService !== undefined; // always offer voice; unsupported langs fall back to an English voice
-          const videoAvailable = voiceAvailable && dependencies.voiceVideoService !== undefined; // video reuses the voice synth
+          const [voiceFlag, videoFlag] = await Promise.all([
+            dependencies.platformSettings.isVoiceEnabled(),
+            dependencies.platformSettings.isVideoEnabled()
+          ]);
+          const voiceAvailable = dependencies.voiceService !== undefined && voiceFlag;
+          const videoAvailable = voiceAvailable && dependencies.voiceVideoService !== undefined && videoFlag;
           await ctx.editMessageText(formatWatchlistEntry(entry, explanation), {
             parse_mode: "Markdown",
             reply_markup: nancyDetailKeyboard(entry.candidate.tokenAddress, entry.gate === "pass", voiceAvailable, videoAvailable)
@@ -492,7 +498,7 @@ export function createBot(dependencies: BotDependencies): Bot {
       const chatId = requireChatId(ctx.chat?.id);
       const fromId = requireTelegramUserId(ctx.from?.id);
       const tokenAddress = String(ctx.match[1] ?? "");
-      if (dependencies.voiceService === undefined) {
+      if (dependencies.voiceService === undefined || !(await dependencies.platformSettings.isVoiceEnabled())) {
         await ctx.answerCallbackQuery({ text: "Voice isn't enabled.", show_alert: true });
         return;
       }
@@ -516,7 +522,7 @@ export function createBot(dependencies: BotDependencies): Bot {
               entry.candidate.tokenAddress,
               entry.gate === "pass",
               true,
-              dependencies.voiceVideoService !== undefined
+              dependencies.voiceVideoService !== undefined && (await dependencies.platformSettings.isVideoEnabled())
             )
           });
         } catch (error) {
@@ -531,7 +537,11 @@ export function createBot(dependencies: BotDependencies): Bot {
       const chatId = requireChatId(ctx.chat?.id);
       const fromId = requireTelegramUserId(ctx.from?.id);
       const tokenAddress = String(ctx.match[1] ?? "");
-      if (dependencies.voiceService === undefined || dependencies.voiceVideoService === undefined) {
+      if (
+        dependencies.voiceService === undefined ||
+        dependencies.voiceVideoService === undefined ||
+        !(await dependencies.platformSettings.isVideoEnabled())
+      ) {
         await ctx.answerCallbackQuery({ text: "Video isn't enabled.", show_alert: true });
         return;
       }
@@ -574,6 +584,7 @@ export function createBot(dependencies: BotDependencies): Bot {
 
   registerSafeCallbacks(bot, dependencies);
   registerPoolCommands(bot, dependencies);
+  registerPlatformCommands(bot, { config: dependencies.config, platformSettings: dependencies.platformSettings });
 
   bot.callbackQuery("prompt_back", async (ctx) => {
     await handlePromptBack(dependencies, ctx);

@@ -36,7 +36,9 @@ export const BOT_COMMANDS = [
   { command: "flap_launch", description: "Create a Flap launch proposal" },
   { command: "safe_prepare", description: "Prepare a Safe transaction" },
   { command: "safe_status", description: "Show Safe transaction status" },
-  { command: "safe_execute", description: "Execute a ready Safe transaction" }
+  { command: "safe_execute", description: "Execute a Safe tx from your wallet (you pay gas)" },
+  { command: "flags", description: "Platform feature flags (platform admins, DM)" },
+  { command: "video", description: "Toggle video notes remotely (platform admins, DM)" }
 ] as const;
 
 export async function configureTelegramBot(bot: Bot): Promise<void> {

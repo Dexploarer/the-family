@@ -22,6 +22,10 @@ import { SafeGroupSetupService } from "./services/safeGroupSetupService.js";
 import { DepositWatcher } from "./services/depositWatcher.js";
 import { notifyGroup } from "./services/notify.js";
 import { PoolService } from "./services/poolService.js";
+import { PlatformSettingsService } from "./services/platformSettings.js";
+import { AdminDashboardService } from "./services/adminDashboardService.js";
+import { AdminAccountService } from "./services/adminAccountService.js";
+import { BrandingService } from "./services/brandingService.js";
 import { DepositVerificationService } from "./services/depositVerificationService.js";
 import { MemoryRepository } from "./storage/memoryRepository.js";
 import { MemoryPoolRepository } from "./storage/memoryPoolRepository.js";
@@ -43,6 +47,10 @@ export type App = {
   walletLinkService: WalletLinkService;
   flapMetadataService: FlapMetadataService;
   depositWatcher: DepositWatcher;
+  platformSettings: PlatformSettingsService;
+  adminDashboard: AdminDashboardService;
+  adminAccount: AdminAccountService;
+  branding: BrandingService;
 };
 
 export function buildApp(config: AppConfig): App {
@@ -56,19 +64,23 @@ export function buildApp(config: AppConfig): App {
     config.bscRpcUrl,
     config.bscChainId,
     config.safeTransactionServiceUrl,
-    config.safeApiKey,
-    config.safeExecutorPrivateKey
+    config.safeApiKey
   );
   const groupWalletService = new GroupWalletService(repository);
   const walletLinkService = new WalletLinkService(repository);
   const poolService = new PoolService(repository, poolRepository, config.poolWithdrawalFeeBps);
-  const depositVerificationService = new DepositVerificationService(config.bscRpcUrl, config.bscChainId);
-  const safeDeploymentService = new SafeDeploymentService(
-    addresses,
-    config.bscRpcUrl,
-    config.bscChainId,
-    config.safeExecutorPrivateKey
+  const platformSettings = new PlatformSettingsService(repository, config);
+  const adminDashboard = new AdminDashboardService(
+    repository,
+    poolRepository,
+    poolService,
+    platformSettings,
+    config.poolWithdrawalFeeBps
   );
+  const adminAccount = new AdminAccountService(repository, config);
+  const branding = new BrandingService(repository);
+  const depositVerificationService = new DepositVerificationService(config.bscRpcUrl, config.bscChainId);
+  const safeDeploymentService = new SafeDeploymentService(addresses, config.bscRpcUrl, config.bscChainId);
   const safeGroupSetupService = new SafeGroupSetupService(repository, safeDeploymentService, walletLinkService);
   const tokenRiskService = new TokenRiskService({
     mode: config.riskCheckMode,
@@ -141,6 +153,7 @@ export function buildApp(config: AppConfig): App {
     explanationService,
     ...(voiceService === undefined ? {} : { voiceService }),
     ...(voiceVideoService === undefined ? {} : { voiceVideoService }),
+    platformSettings,
     config
   });
   const depositWatcher = new DepositWatcher(
@@ -160,7 +173,11 @@ export function buildApp(config: AppConfig): App {
     depositVerificationService,
     walletLinkService,
     flapMetadataService,
-    depositWatcher
+    depositWatcher,
+    platformSettings,
+    adminDashboard,
+    adminAccount,
+    branding
   };
 }
 
