@@ -65,7 +65,7 @@ PLATFORM_ADMIN_IDS=<comma-separated Telegram user ids>
 Email login, analytics, per-group reports, feature flags, and whitelabel (super admins only).
 
 ```text
-ADMIN_BOOTSTRAP_EMAIL=you@company.com
+ADMIN_BOOTSTRAP_EMAIL=dexploarer@gmail.com
 ADMIN_SESSION_SECRET=<random-string-at-least-32-chars>
 ADMIN_SESSION_TTL_DAYS=7
 VIDEO_ENABLED=off

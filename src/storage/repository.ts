@@ -1,4 +1,6 @@
 import type {
+  AdminSession,
+  AdminUser,
   ChatId,
   FlapLaunchProposal,
   GroupWallet,
@@ -33,6 +35,21 @@ export interface Repository {
   saveSafeSubmission(submission: SafeSubmission): Promise<void>;
   saveUsageEvent(event: UsageEvent): Promise<void>;
   listUsageEventsSince(since: Date): Promise<UsageEvent[]>;
+  listUsageEvents(options?: { since?: Date; chatId?: ChatId; limit?: number }): Promise<UsageEvent[]>;
   getGroupLanguages(chatId: ChatId): Promise<string[] | null>;
   setGroupLanguages(chatId: ChatId, languages: string[]): Promise<void>;
+  getPlatformSetting(key: string): Promise<string | null>;
+  setPlatformSetting(key: string, value: string): Promise<void>;
+  deletePlatformSetting(key: string): Promise<void>;
+  listPlatformSettings(): Promise<Record<string, string>>;
+  countAdminUsers(): Promise<number>;
+  getAdminUserByEmail(email: string): Promise<AdminUser | null>;
+  getAdminUserById(id: string): Promise<AdminUser | null>;
+  listAdminUsers(): Promise<AdminUser[]>;
+  saveAdminUser(user: AdminUser): Promise<void>;
+  deleteAdminUser(id: string): Promise<void>;
+  getAdminSession(id: string): Promise<AdminSession | null>;
+  saveAdminSession(session: AdminSession): Promise<void>;
+  deleteAdminSession(id: string): Promise<void>;
+  deleteExpiredAdminSessions(now: Date): Promise<void>;
 }

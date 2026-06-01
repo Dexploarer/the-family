@@ -1,6 +1,5 @@
 import { Bot } from "grammy";
 import { createPublicClient, http, parseEther, type Address } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
 import { bsc, bscTestnet } from "viem/chains";
 import { Pool } from "pg";
 import { getBscContractAddresses, NATIVE_TOKEN_ADDRESS } from "../chain/addresses.js";
@@ -51,9 +50,8 @@ await checkPancakeQuote(config);
 await checkPublicHttp(config);
 await checkPostgres(config);
 await checkPinata(config);
-await checkExecutorFunding(config);
-skip("funded Safe deployment", "requires explicitly funded SAFE_EXECUTOR_PRIVATE_KEY and approved mainnet/testnet spend");
-skip("funded Safe execution", "requires a prepared Safe tx with threshold owner confirmations and approved gas spend");
+skip("funded Safe deployment", "requires an owner wallet deploy via /deploy/<sessionId> and approved mainnet/testnet gas spend");
+skip("funded Safe execution", "requires a prepared Safe tx with threshold owner confirmations and an owner wallet execution");
 skip("funded PancakeSwap buy", "quote/build is tested; live swap spend is intentionally not run by smoke");
 skip("funded Flap launch", "transaction builder is tested; live token launch requires approved spend and metadata");
 skip("Telegram group inline button flow", "requires a real group chat/admin interaction; Bot API metadata is tested live");
@@ -198,19 +196,6 @@ async function checkPinata(input: AppConfig): Promise<void> {
   });
   pass("Pinata auth", "JWT accepted");
   skip("Pinata metadata upload", "auth is checked; upload is not run to avoid creating third-party artifacts");
-}
-
-async function checkExecutorFunding(input: AppConfig): Promise<void> {
-  if (input.safeExecutorPrivateKey === undefined) {
-    skip("Safe executor gas wallet", "SAFE_EXECUTOR_PRIVATE_KEY is not configured");
-    return;
-  }
-  const account = privateKeyToAccount(input.safeExecutorPrivateKey);
-  const balance = await publicClient.getBalance({ address: account.address });
-  if (balance === 0n) {
-    throw new AppError("Safe executor gas wallet has zero native balance", { address: account.address });
-  }
-  pass("Safe executor gas wallet", `${account.address} balance=${balance.toString()}`);
 }
 
 function pass(name: string, detail: string): void {

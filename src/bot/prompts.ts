@@ -13,7 +13,7 @@ import { parsePositiveInteger } from "./commandUtils.js";
 import { createFlapSalt, parseVaultRecipients } from "../chain/flapService.js";
 import { formatFlapLaunch, formatSafeCreationSession, formatSafeStatus, formatSafeSubmission, formatTradeProposal } from "./formatters.js";
 import { formatPoolAnalytics, formatWithdrawalRequest } from "./poolCommands.js";
-import { flapLaunchKeyboard, linkPageKeyboard, safeGroupKeyboard, safeSubmissionKeyboard, tradeProposalKeyboard, withdrawalKeyboard } from "./keyboards.js";
+import { executePageKeyboard, flapLaunchKeyboard, linkPageKeyboard, safeGroupKeyboard, safeSubmissionKeyboard, tradeProposalKeyboard, withdrawalKeyboard } from "./keyboards.js";
 import type { BotDependencies } from "./bot.js";
 
 export type PromptReply = (text: string, keyboard?: InlineKeyboard) => Promise<void>;
@@ -391,9 +391,11 @@ export const PROMPT_FLOWS: Record<string, PromptFlow> = {
     adminOnly: true,
     fields: [{ label: "Safe submission ID", example: "safe_abc123", validate: validateNonEmpty("Submission ID") }],
     execute: async (c, values) => {
-      await c.requireAdmin();
-      const txHash = await c.deps.safeSubmissionService.execute(required(values, 0));
-      await c.reply(`Safe execution submitted: ${txHash}`);
+      const submissionId = required(values, 0);
+      await c.reply(
+        "Enough owners signed? Execute from your own wallet — you pay the gas, the bot holds no key.",
+        executePageKeyboard(submissionId, c.deps.config.publicBaseUrl, false)
+      );
     }
   },
   flap_metadata: {

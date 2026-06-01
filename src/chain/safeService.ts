@@ -1,6 +1,5 @@
 import {
   createPublicClient,
-  createWalletClient,
   decodeFunctionData,
   encodeFunctionData,
   http,
@@ -8,7 +7,6 @@ import {
   type Hex,
   type PublicClient
 } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
 import { bsc, bscTestnet } from "viem/chains";
 import { AppError, UserInputError } from "../domain/errors.js";
 import type { ChainTransaction, SafeTransactionData } from "../domain/types.js";
@@ -48,30 +46,19 @@ export type SafeTransactionServiceStatus = {
 export class SafeService {
   readonly publicClient: PublicClient;
   private readonly chain;
-  private readonly walletClient?: ReturnType<typeof createWalletClient>;
-  private readonly executorAccount?: ReturnType<typeof privateKeyToAccount>;
 
   constructor(
     private readonly addresses: BscContractAddresses,
     rpcUrl: string,
     private readonly chainId: 56 | 97,
     private readonly explicitTransactionServiceUrl?: string,
-    private readonly apiKey?: string,
-    executorPrivateKey?: Hex
+    private readonly apiKey?: string
   ) {
     this.chain = chainId === 56 ? bsc : bscTestnet;
     this.publicClient = createPublicClient({
       chain: this.chain,
       transport: http(rpcUrl)
     });
-    if (executorPrivateKey !== undefined) {
-      this.executorAccount = privateKeyToAccount(executorPrivateKey);
-      this.walletClient = createWalletClient({
-        account: this.executorAccount,
-        chain: this.chain,
-        transport: http(rpcUrl)
-      });
-    }
   }
 
   async prepareSafeTransaction(
@@ -138,33 +125,13 @@ export class SafeService {
   }
 
   async executeTransaction(
-    safeAddress: Address,
-    safeTransaction: SafeTransactionData,
-    confirmations: SafeConfirmation[]
+    _safeAddress: Address,
+    _safeTransaction: SafeTransactionData,
+    _confirmations: SafeConfirmation[]
   ): Promise<Hex> {
-    if (this.walletClient === undefined || this.executorAccount === undefined) {
-      throw new UserInputError("SAFE_EXECUTOR_PRIVATE_KEY is required to execute Safe transactions from the bot");
-    }
-    const signatures = buildSignatureBytes(confirmations);
-    return this.walletClient.writeContract({
-      address: safeAddress,
-      abi: safeAbi,
-      functionName: "execTransaction",
-      account: this.executorAccount,
-      chain: this.chain,
-      args: [
-        safeTransaction.to,
-        safeTransaction.value,
-        safeTransaction.data,
-        safeTransaction.operation,
-        safeTransaction.safeTxGas,
-        safeTransaction.baseGas,
-        safeTransaction.gasPrice,
-        safeTransaction.gasToken,
-        safeTransaction.refundReceiver,
-        signatures
-      ]
-    });
+    throw new UserInputError(
+      "Safe execution is owner-wallet only. Tap Execute on the submission message (or open /execute/<safeSubmissionId>) and send execTransaction from your wallet."
+    );
   }
 
   // Pure: the execTransaction calldata an owner sends from their own wallet

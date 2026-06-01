@@ -1,6 +1,8 @@
 import { Pool } from "pg";
 import { buildPgPoolConfig } from "./pgPoolConfig.js";
 import type {
+  AdminSession,
+  AdminUser,
   ChatId,
   FlapLaunchProposal,
   GroupWallet,
@@ -411,23 +413,100 @@ export class PostgresRepository implements Repository {
   }
 
   async saveUsageEvent(event: UsageEvent): Promise<void> {
-    await this.pool.query(
-      "insert into usage_events(id, command, telegram_user_id, created_at) values ($1, $2, $3, $4)",
-      [event.id, event.command, event.telegramUserId, event.createdAt]
-    );
+    try {
+      await this.pool.query(
+        "insert into usage_events(id, command, telegram_user_id, chat_id, created_at) values ($1, $2, $3, $4, $5)",
+        [event.id, event.command, event.telegramUserId, event.chatId ?? null, event.createdAt]
+      );
+    } catch {
+      await this.pool.query(
+        "insert into usage_events(id, command, telegram_user_id, created_at) values ($1, $2, $3, $4)",
+        [event.id, event.command, event.telegramUserId, event.createdAt]
+      );
+    }
   }
 
   async listUsageEventsSince(since: Date): Promise<UsageEvent[]> {
-    const result = await this.pool.query<{ id: string; command: string; telegram_user_id: string; created_at: Date }>(
-      "select id, command, telegram_user_id, created_at from usage_events where created_at >= $1",
-      [since]
+    return this.listUsageEvents({ since });
+  }
+
+  async listUsageEvents(options?: { since?: Date; chatId?: ChatId; limit?: number }): Promise<UsageEvent[]> {
+    const limit = options?.limit ?? 200;
+    const clauses: string[] = [];
+    const params: unknown[] = [];
+    if (options?.since !== undefined) {
+      params.push(options.since);
+      clauses.push(`created_at >= $${params.length}`);
+    }
+    if (options?.chatId !== undefined) {
+      params.push(options.chatId);
+      clauses.push(`chat_id = $${params.length}`);
+    }
+    params.push(limit);
+    const where = clauses.length > 0 ? `where ${clauses.join(" and ")}` : "";
+    const sql = `select id, command, telegram_user_id, chat_id, created_at from usage_events ${where} order by created_at desc limit $${params.length}`;
+    try {
+      const result = await this.pool.query<{
+        id: string;
+        command: string;
+        telegram_user_id: string;
+        chat_id: string | null;
+        created_at: Date;
+      }>(sql, params);
+      return result.rows.map((row) => ({
+        id: row.id,
+        command: row.command,
+        telegramUserId: row.telegram_user_id,
+        createdAt: row.created_at,
+        ...(row.chat_id === null ? {} : { chatId: row.chat_id })
+      }));
+    } catch {
+      if (options?.chatId !== undefined) {
+        return [];
+      }
+      const fallbackParams = params.filter((_, index) => index !== params.length - 1 || typeof params[index] === "number");
+      const sinceOnly = options?.since !== undefined ? "where created_at >= $1" : "";
+      const fallbackLimit = limit;
+      const result = await this.pool.query<{ id: string; command: string; telegram_user_id: string; created_at: Date }>(
+        `select id, command, telegram_user_id, created_at from usage_events ${sinceOnly} order by created_at desc limit $${sinceOnly ? 2 : 1}`,
+        options?.since !== undefined ? [options.since, fallbackLimit] : [fallbackLimit]
+      );
+      return result.rows.map((row) => ({
+        id: row.id,
+        command: row.command,
+        telegramUserId: row.telegram_user_id,
+        createdAt: row.created_at
+      }));
+    }
+  }
+
+  async getPlatformSetting(key: string): Promise<string | null> {
+    try {
+      const result = await this.pool.query<{ value: string }>("select value from platform_settings where key = $1", [key]);
+      return result.rows[0]?.value ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async setPlatformSetting(key: string, value: string): Promise<void> {
+    await this.pool.query(
+      "insert into platform_settings(key, value, updated_at) values ($1, $2, now()) on conflict (key) do update set value = excluded.value, updated_at = excluded.updated_at",
+      [key, value]
     );
-    return result.rows.map((row) => ({
-      id: row.id,
-      command: row.command,
-      telegramUserId: row.telegram_user_id,
-      createdAt: row.created_at
-    }));
+  }
+
+  async deletePlatformSetting(key: string): Promise<void> {
+    await this.pool.query("delete from platform_settings where key = $1", [key]);
+  }
+
+  async listPlatformSettings(): Promise<Record<string, string>> {
+    try {
+      const result = await this.pool.query<{ key: string; value: string }>("select key, value from platform_settings");
+      return Object.fromEntries(result.rows.map((row) => [row.key, row.value]));
+    } catch {
+      return {};
+    }
   }
 
   async getGroupLanguages(chatId: ChatId): Promise<string[] | null> {
@@ -452,4 +531,142 @@ export class PostgresRepository implements Repository {
       [chatId, languages.join(",")]
     );
   }
+
+  async countAdminUsers(): Promise<number> {
+    try {
+      const result = await this.pool.query<{ count: string }>("select count(*)::text as count from admin_users");
+      return Number(result.rows[0]?.count ?? "0");
+    } catch {
+      return 0;
+    }
+  }
+
+  async getAdminUserByEmail(email: string): Promise<AdminUser | null> {
+    try {
+      const result = await this.pool.query<AdminUserRow>(
+        "select id, email, password_hash, role, created_at, updated_at, last_login_at from admin_users where lower(email) = lower($1)",
+        [email.trim()]
+      );
+      const row = result.rows[0];
+      return row === undefined ? null : deserializeAdminUser(row);
+    } catch {
+      return null;
+    }
+  }
+
+  async getAdminUserById(id: string): Promise<AdminUser | null> {
+    try {
+      const result = await this.pool.query<AdminUserRow>(
+        "select id, email, password_hash, role, created_at, updated_at, last_login_at from admin_users where id = $1",
+        [id]
+      );
+      const row = result.rows[0];
+      return row === undefined ? null : deserializeAdminUser(row);
+    } catch {
+      return null;
+    }
+  }
+
+  async listAdminUsers(): Promise<AdminUser[]> {
+    try {
+      const result = await this.pool.query<AdminUserRow>(
+        "select id, email, password_hash, role, created_at, updated_at, last_login_at from admin_users order by email asc"
+      );
+      return result.rows.map(deserializeAdminUser);
+    } catch {
+      return [];
+    }
+  }
+
+  async saveAdminUser(user: AdminUser): Promise<void> {
+    await this.pool.query(
+      `insert into admin_users(id, email, password_hash, role, created_at, updated_at, last_login_at)
+       values ($1, $2, $3, $4, $5, $6, $7)
+       on conflict (id) do update set
+         email = excluded.email,
+         password_hash = excluded.password_hash,
+         role = excluded.role,
+         updated_at = excluded.updated_at,
+         last_login_at = excluded.last_login_at`,
+      [
+        user.id,
+        user.email,
+        user.passwordHash,
+        user.role,
+        user.createdAt,
+        user.updatedAt,
+        user.lastLoginAt
+      ]
+    );
+  }
+
+  async deleteAdminUser(id: string): Promise<void> {
+    await this.pool.query("delete from admin_users where id = $1", [id]);
+  }
+
+  async getAdminSession(id: string): Promise<AdminSession | null> {
+    try {
+      const result = await this.pool.query<AdminSessionRow>(
+        "select id, user_id, expires_at, created_at from admin_sessions where id = $1",
+        [id]
+      );
+      const row = result.rows[0];
+      return row === undefined ? null : deserializeAdminSession(row);
+    } catch {
+      return null;
+    }
+  }
+
+  async saveAdminSession(session: AdminSession): Promise<void> {
+    await this.pool.query(
+      "insert into admin_sessions(id, user_id, expires_at, created_at) values ($1, $2, $3, $4) on conflict (id) do update set expires_at = excluded.expires_at",
+      [session.id, session.userId, session.expiresAt, session.createdAt]
+    );
+  }
+
+  async deleteAdminSession(id: string): Promise<void> {
+    await this.pool.query("delete from admin_sessions where id = $1", [id]);
+  }
+
+  async deleteExpiredAdminSessions(now: Date): Promise<void> {
+    await this.pool.query("delete from admin_sessions where expires_at <= $1", [now]);
+  }
+}
+
+type AdminUserRow = {
+  id: string;
+  email: string;
+  password_hash: string | null;
+  role: "super_admin" | "admin";
+  created_at: Date;
+  updated_at: Date;
+  last_login_at: Date | null;
+};
+
+type AdminSessionRow = {
+  id: string;
+  user_id: string;
+  expires_at: Date;
+  created_at: Date;
+};
+
+function deserializeAdminUser(row: AdminUserRow): AdminUser {
+  return {
+    id: row.id,
+    email: row.email,
+    passwordHash: row.password_hash,
+    role: row.role,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    lastLoginAt: row.last_login_at
+  };
+}
+
+function deserializeAdminSession(row: AdminSessionRow): AdminSession {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    expiresAt: row.expires_at,
+    createdAt: row.created_at
+  };
 }

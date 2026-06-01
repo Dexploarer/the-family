@@ -32,10 +32,12 @@ services:
       # webhook against the right host and serves the link/deploy/execute/pool pages.
       - key: PUBLIC_BASE_URL
         value: ${APP_URL}
+      - key: ADMIN_BOOTSTRAP_EMAIL
+        value: dexploarer@gmail.com
       # All remaining vars are set in the App Platform dashboard (bulk-paste from .env),
       # with these marked as SECRET:
       #   TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, DATABASE_URL, SAFE_API_KEY,
-      #   SAFE_EXECUTOR_PRIVATE_KEY, PINATA_JWT
+      #   PINATA_JWT, ADMIN_SESSION_SECRET
       # and these as plain config:
       #   BSC_CHAIN_ID, BSC_RPC_URL, SAFE_TRANSACTION_SERVICE_URL, WALLETCONNECT_PROJECT_ID,
       #   PLATFORM_FEE_RECIPIENT, PLATFORM_COMMISSION_RECEIVER, PLATFORM_ADMIN_IDS,

@@ -61,7 +61,8 @@ Covered:
 - HTTP `/health` and `/pool/live-smoke` when `PUBLIC_BASE_URL` is configured.
 - Postgres `select 1` when `STORAGE_DRIVER=postgres`.
 - Pinata auth when `PINATA_JWT` is configured.
-- Executor gas wallet balance when `SAFE_EXECUTOR_PRIVATE_KEY` is configured.
+
+Deploy and execute use owner wallets (no bot gas key). Live funded deploy/execute checks are intentionally skipped.
 
 ## Full deterministic simulation
 

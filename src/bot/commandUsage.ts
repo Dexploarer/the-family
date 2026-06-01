@@ -25,10 +25,10 @@ export const COMMAND_USAGE: Record<string, CommandUsage> = {
     next: "No Safe yet? Create one with /safe_group <threshold> or /safe_create."
   },
   safe_create: {
-    summary: "Deploy a new Safe from owner addresses you already know (admin only).",
+    summary: "Deprecated — use /safe_group to deploy from an owner's wallet, or /wallet_set to link an existing Safe.",
     usage: "/safe_create <threshold> <owner1> [owner2 ...]",
-    example: "/safe_create 2 0xOwnerA... 0xOwnerB...",
-    next: "Prefer collecting members with buttons? Use /safe_group <threshold> instead."
+    example: "/safe_group 2",
+    next: "Collect owners with inline buttons, then tap Deploy Safe."
   },
   safe_group: {
     summary: "Start collecting group members to deploy a Safe (admin only).",
@@ -85,10 +85,10 @@ export const COMMAND_USAGE: Record<string, CommandUsage> = {
     next: "The submission ID comes from /safe_prepare <type> <id>."
   },
   safe_execute: {
-    summary: "Execute a Safe transaction once enough owners have signed (admin only).",
+    summary: "Open the wallet execute page for a ready Safe submission (admin only). You pay gas from your wallet.",
     usage: "/safe_execute <safeSubmissionId>",
     example: "/safe_execute safe_abc123",
-    next: "Check it is ready with /safe_status <safeSubmissionId> first. The ID comes from /safe_prepare."
+    next: "Check confirmations with /safe_status first. Tap the link to send execTransaction from your wallet."
   },
   pool_nav: {
     summary: "Update the pool's mark-to-market NAV snapshot (owner only).",

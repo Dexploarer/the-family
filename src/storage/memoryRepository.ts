@@ -1,4 +1,6 @@
 import type {
+  AdminSession,
+  AdminUser,
   ChatId,
   FlapLaunchProposal,
   GroupWallet,
@@ -21,6 +23,10 @@ export class MemoryRepository implements Repository {
   private readonly safeSubmissions = new Map<string, SafeSubmission>();
   private readonly usageEvents: UsageEvent[] = [];
   private readonly groupLanguages = new Map<ChatId, string[]>();
+  private readonly platformSettings = new Map<string, string>();
+  private readonly adminUsers = new Map<string, AdminUser>();
+  private readonly adminUsersByEmail = new Map<string, string>();
+  private readonly adminSessions = new Map<string, AdminSession>();
 
   async getGroupWallet(chatId: ChatId): Promise<GroupWallet | null> {
     return this.groupWallets.get(chatId) ?? null;
@@ -112,6 +118,18 @@ export class MemoryRepository implements Repository {
     return this.usageEvents.filter((event) => event.createdAt >= since);
   }
 
+  async listUsageEvents(options?: { since?: Date; chatId?: ChatId; limit?: number }): Promise<UsageEvent[]> {
+    let rows = [...this.usageEvents].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    if (options?.since !== undefined) {
+      rows = rows.filter((event) => event.createdAt >= options.since!);
+    }
+    if (options?.chatId !== undefined) {
+      rows = rows.filter((event) => event.chatId === options.chatId);
+    }
+    const limit = options?.limit ?? 200;
+    return rows.slice(0, limit);
+  }
+
   async getGroupLanguages(chatId: ChatId): Promise<string[] | null> {
     return this.groupLanguages.get(chatId) ?? null;
   }
@@ -119,10 +137,85 @@ export class MemoryRepository implements Repository {
   async setGroupLanguages(chatId: ChatId, languages: string[]): Promise<void> {
     this.groupLanguages.set(chatId, languages);
   }
+
+  async getPlatformSetting(key: string): Promise<string | null> {
+    return this.platformSettings.get(key) ?? null;
+  }
+
+  async setPlatformSetting(key: string, value: string): Promise<void> {
+    this.platformSettings.set(key, value);
+  }
+
+  async deletePlatformSetting(key: string): Promise<void> {
+    this.platformSettings.delete(key);
+  }
+
+  async listPlatformSettings(): Promise<Record<string, string>> {
+    return Object.fromEntries(this.platformSettings.entries());
+  }
+
+  async countAdminUsers(): Promise<number> {
+    return this.adminUsers.size;
+  }
+
+  async getAdminUserByEmail(email: string): Promise<AdminUser | null> {
+    const id = this.adminUsersByEmail.get(normalizeAdminEmail(email));
+    return id === undefined ? null : (this.adminUsers.get(id) ?? null);
+  }
+
+  async getAdminUserById(id: string): Promise<AdminUser | null> {
+    return this.adminUsers.get(id) ?? null;
+  }
+
+  async listAdminUsers(): Promise<AdminUser[]> {
+    return [...this.adminUsers.values()].sort((a, b) => a.email.localeCompare(b.email));
+  }
+
+  async saveAdminUser(user: AdminUser): Promise<void> {
+    this.adminUsers.set(user.id, user);
+    this.adminUsersByEmail.set(user.email, user.id);
+  }
+
+  async deleteAdminUser(id: string): Promise<void> {
+    const user = this.adminUsers.get(id);
+    if (user !== undefined) {
+      this.adminUsersByEmail.delete(user.email);
+    }
+    this.adminUsers.delete(id);
+    for (const [sessionId, session] of this.adminSessions.entries()) {
+      if (session.userId === id) {
+        this.adminSessions.delete(sessionId);
+      }
+    }
+  }
+
+  async getAdminSession(id: string): Promise<AdminSession | null> {
+    return this.adminSessions.get(id) ?? null;
+  }
+
+  async saveAdminSession(session: AdminSession): Promise<void> {
+    this.adminSessions.set(session.id, session);
+  }
+
+  async deleteAdminSession(id: string): Promise<void> {
+    this.adminSessions.delete(id);
+  }
+
+  async deleteExpiredAdminSessions(now: Date): Promise<void> {
+    for (const [sessionId, session] of this.adminSessions.entries()) {
+      if (session.expiresAt <= now) {
+        this.adminSessions.delete(sessionId);
+      }
+    }
+  }
 }
 
 function walletLinkKey(telegramUserId: string, address: string): string {
   return `${telegramUserId}:${address.toLowerCase()}`;
+}
+
+function normalizeAdminEmail(email: string): string {
+  return email.trim().toLowerCase();
 }
 
 function promptKey(chatId: ChatId, telegramUserId: string): string {

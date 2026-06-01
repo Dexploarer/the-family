@@ -26,11 +26,10 @@ PUBLIC_BASE_URL=https://...
 TELEGRAM_WEBHOOK_SECRET=<random-32-byte-string>
 RISK_CHECK_MODE=warn
 SAFE_TRANSACTION_SERVICE_URL=https://api.safe.global/tx-service/bnb
-SAFE_EXECUTOR_PRIVATE_KEY=<gas-only-deployer-and-executor-key>
+WALLETCONNECT_PROJECT_ID=<WalletConnect cloud project id>
 ```
 
-`SAFE_EXECUTOR_PRIVATE_KEY` pays gas for `/safe_create` and `/safe_execute`; it must not be a Safe owner key.
-Nancy is non-custodial: it never stores private keys. `/wallet_generate` (DM only) creates a keypair, shows the private key once, and stores only the public key.
+Nancy is non-custodial: it never stores private keys. Safe deploy and execute are sent from owner wallets via `/deploy/<sessionId>` and `/execute/<safeSubmissionId>`. `/wallet_generate` (DM only) creates a keypair, shows the private key once, and stores only the public key.
 
 ## Launch steps
 

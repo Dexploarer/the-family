@@ -1,7 +1,5 @@
-import { randomBytes } from "node:crypto";
 import {
   createPublicClient,
-  createWalletClient,
   encodeFunctionData,
   http,
   keccak256,
@@ -11,7 +9,6 @@ import {
   type Hex,
   type PublicClient
 } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
 import { bsc, bscTestnet } from "viem/chains";
 import { safeAbi, safeProxyFactoryAbi } from "../chain/abis.js";
 import { type BscContractAddresses, NATIVE_TOKEN_ADDRESS } from "../chain/addresses.js";
@@ -33,63 +30,27 @@ export type SafeDeployment = {
 export class SafeDeploymentService {
   readonly publicClient: PublicClient;
   private readonly chain;
-  private readonly walletClient?: ReturnType<typeof createWalletClient>;
-  private readonly executorAccount?: ReturnType<typeof privateKeyToAccount>;
 
   constructor(
     private readonly addresses: BscContractAddresses,
     rpcUrl: string,
-    chainId: 56 | 97,
-    executorPrivateKey?: Hex
+    chainId: 56 | 97
   ) {
     this.chain = chainId === 56 ? bsc : bscTestnet;
     this.publicClient = createPublicClient({
       chain: this.chain,
       transport: http(rpcUrl)
     });
-    if (executorPrivateKey !== undefined) {
-      this.executorAccount = privateKeyToAccount(executorPrivateKey);
-      this.walletClient = createWalletClient({
-        account: this.executorAccount,
-        chain: this.chain,
-        transport: http(rpcUrl)
-      });
-    }
   }
 
   async getNativeBalanceWei(address: Address): Promise<bigint> {
     return this.publicClient.getBalance({ address });
   }
 
-  async createSafe(input: CreateSafeInput): Promise<SafeDeployment> {
-    if (this.walletClient === undefined || this.executorAccount === undefined) {
-      throw new UserInputError("SAFE_EXECUTOR_PRIVATE_KEY is required to create a Safe from Telegram");
-    }
-    const transaction = this.buildDeploymentTransaction(input.owners, input.threshold, createSaltNonce());
-    const transactionHash = await this.walletClient.writeContract({
-      address: this.addresses.safeProxyFactory,
-      abi: safeProxyFactoryAbi,
-      functionName: "createProxyWithNonce",
-      account: this.executorAccount,
-      chain: this.chain,
-      args: [this.addresses.safeSingleton, buildSafeInitializer(this.addresses.safeFallbackHandler, input.owners, input.threshold), transaction.saltNonce]
-    });
-    const receipt = await this.publicClient.waitForTransactionReceipt({ hash: transactionHash });
-    const events = parseEventLogs({
-      abi: safeProxyFactoryAbi,
-      eventName: "ProxyCreation",
-      logs: receipt.logs
-    });
-    const event = events.find((item) => item.address.toLowerCase() === this.addresses.safeProxyFactory.toLowerCase());
-    if (event === undefined) {
-      throw new AppError("Safe deployment transaction did not emit ProxyCreation", { transactionHash });
-    }
-    return {
-      safeAddress: event.args.proxy,
-      transactionHash,
-      threshold: input.threshold,
-      owners: input.owners
-    };
+  async createSafe(_input: CreateSafeInput): Promise<SafeDeployment> {
+    throw new UserInputError(
+      "Safe deployment is owner-wallet only. Use /safe_group <threshold>, collect owners, then tap Deploy Safe to send createProxyWithNonce from your wallet."
+    );
   }
 
   // Verify a Safe that an owner deployed from their own wallet. Re-derives the
@@ -189,8 +150,4 @@ function assertSafeOwners(owners: Address[], threshold: number): void {
     }
     uniqueOwners.add(normalized);
   }
-}
-
-function createSaltNonce(): bigint {
-  return BigInt(`0x${randomBytes(32).toString("hex")}`);
 }

@@ -80,6 +80,8 @@ export class SafeGroupSetupService {
     return updated;
   }
 
+  // Bot-key deploy path (tests/simulation only). Production uses wallet deploy +
+  // verifyWalletDeployment → finalizeDeployment.
   async deploy(sessionId: string): Promise<SafeGroupDeployment> {
     const session = await this.getCollectingSession(sessionId);
     if (session.threshold > session.owners.length) {
@@ -96,8 +98,8 @@ export class SafeGroupSetupService {
   }
 
   // Records an already-deployed Safe against the group and closes the session.
-  // Used by the bot-key deploy() above and by the deploy-from-wallet flow, which
-  // verifies the on-chain deployment before calling this.
+  // Used by the wallet deploy flow (verify on-chain, then finalize) and by tests
+  // that inject a simulated SafeDeploymentService.
   async finalizeDeployment(sessionId: string, safeAddress: Address, transactionHash: Hex): Promise<SafeGroupDeployment> {
     const session = await this.getCollectingSession(sessionId);
     if (session.threshold > session.owners.length) {

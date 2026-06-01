@@ -16,6 +16,7 @@
     "sim:full": "bun src/qa/fullSimulation.ts",
     "smoke:local": "bun src/qa/localSmoke.ts",
     "smoke:live": "bun src/qa/liveSmoke.ts",
+    "deploy:elizacloud": "bun src/qa/deployElizacloud.ts",
     "verify": "bun run typecheck && bun run test && bun run acceptance:static",
     "verify:full": "bun run verify && bun run build && bun run sim:full && bun run smoke:local && bun run acceptance:live && bun run smoke:live"
   },
