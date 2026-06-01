@@ -3,10 +3,10 @@ import { Logger } from "../logger.js";
 
 export const BOT_NAME = "BNancy, the Golden Girl of Binance";
 
-export const BOT_SHORT_DESCRIPTION = "BSC Safe group trading, pool accounting, and Flap launches for Telegram groups.";
+export const BOT_SHORT_DESCRIPTION = "BNancy runs BSC Safe group trading, pool accounting, and Flap launches for Telegram groups.";
 
 export const BOT_DESCRIPTION = [
-  "BNancy, the Golden Girl of Binance, helps Telegram groups run BSC Safe trading pools.",
+  "BNancy, the Golden Girl of Binance, helps Telegram groups run non-custodial BSC Safe trading pools.",
   "Create or link a group Safe, assign owners/traders/members, verify deposits, track shares and PnL, prepare token buys, launch through Flap, and approve Safe transactions.",
   "BNancy is infrastructure only. No profit, token, or execution guarantees."
 ].join("\n");

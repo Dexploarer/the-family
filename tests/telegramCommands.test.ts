@@ -19,6 +19,9 @@ describe("BOT_COMMANDS", () => {
 
   it("uses BNancy as the bot identity and keeps metadata inside Telegram limits", () => {
     expect(BOT_NAME).toBe("BNancy, the Golden Girl of Binance");
+    expect(BOT_SHORT_DESCRIPTION).toContain("BNancy");
+    expect(BOT_DESCRIPTION).toContain("BNancy");
+    expect(`${BOT_NAME}\n${BOT_SHORT_DESCRIPTION}\n${BOT_DESCRIPTION}`).not.toMatch(/\bNancy\b/);
     expect(BOT_NAME.length).toBeLessThanOrEqual(64);
     expect(BOT_SHORT_DESCRIPTION.length).toBeLessThanOrEqual(120);
     expect(BOT_DESCRIPTION.length).toBeLessThanOrEqual(512);

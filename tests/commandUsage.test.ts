@@ -43,4 +43,9 @@ describe("renderUsage", () => {
       expect(COMMAND_USAGE[command]).toBeDefined();
     }
   });
+
+  it("keeps Flap examples generic instead of using the product brand as a token", () => {
+    expect(COMMAND_USAGE["flap_metadata"]!.example).toContain("Family Coin|FAM");
+    expect(COMMAND_USAGE["flap_launch"]!.example).toContain("Family Coin|FAM");
+  });
 });

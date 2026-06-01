@@ -1,4 +1,4 @@
-# BNANCY
+# BNancy
 
 <p align="center">
   <img src="assets/bnancy.png" alt="BNancy, the Golden Girl of Binance" width="320" />
