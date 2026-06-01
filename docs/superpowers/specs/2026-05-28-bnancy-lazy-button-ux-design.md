@@ -1,8 +1,8 @@
-# Nancy lazy/button-first UX
+# BNancy lazy/button-first UX
 
 **Date:** 2026-05-28
 **Status:** Approved (design)
-**Builds on:** [2026-05-28-nancy-noncustodial-wallet-redesign-design.md](2026-05-28-nancy-noncustodial-wallet-redesign-design.md)
+**Builds on:** [2026-05-28-bnancy-noncustodial-wallet-redesign-design.md](2026-05-28-bnancy-noncustodial-wallet-redesign-design.md)
 
 ## Problem
 

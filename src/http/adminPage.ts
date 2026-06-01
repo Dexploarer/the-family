@@ -353,7 +353,7 @@ export function renderAdminPage(branding: BrandingSnapshot): string {
         '</td><td>' + esc(log.tokenSymbol || "—") + '</td><td>' + esc(log.telegramUserId || "—") + '</td><td>' +
         esc(log.chatId || "—") + '</td><td>' + log.latencyMs + '</td><td><span class="muted">' +
         esc(log.promptPreview) + '</span><br/>' + esc((log.responsePreview || log.errorMessage || "").slice(0, 120)) + '</td></tr>'
-      ).join("") || "<tr><td colspan='8' class='muted'>No inference logs yet — open a token in /nancy</td></tr>";
+      ).join("") || "<tr><td colspan='8' class='muted'>No inference logs yet — open a token in /bnancy</td></tr>";
     }
 
     async function loadActivity() {

@@ -1,6 +1,6 @@
-# DigitalOcean App Platform spec for Nancy (matches live app).
+# DigitalOcean App Platform spec for BNancy (matches live app).
 # Production builds from GitHub on push (deploy_on_push). GHCR images: publish.yml.
-name: nancy
+name: bnancy
 region: sfo
 services:
   - name: bot
@@ -9,7 +9,7 @@ services:
     dockerfile_path: Dockerfile
     source_dir: /
     github:
-      repo: Dexploarer/Nancy
+      repo: Dexploarer/BNancy
       branch: main
       deploy_on_push: true
     http_port: 8080

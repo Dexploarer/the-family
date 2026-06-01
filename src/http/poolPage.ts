@@ -7,7 +7,7 @@ export function renderPoolPage(chatId: string): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   ${brandHead()}
-  <title>Nancy Pool</title>
+  <title>BNancy Pool</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -140,7 +140,7 @@ export function renderPoolPage(chatId: string): string {
   <main class="shell" data-pool-root data-chat-id="${escapeAttribute(chatId)}">
     <section class="topbar">
       <div>
-        <h1>Nancy Pool</h1>
+        <h1>BNancy Pool</h1>
         <p class="muted" data-subtitle>Loading pool analytics</p>
       </div>
       <button type="button" data-refresh>Refresh</button>

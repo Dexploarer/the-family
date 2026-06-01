@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { ConcurrencyGate } from "../concurrencyGate.js";
 import { Logger } from "../logger.js";
 
-// The waveform band: gold (BNB brand) cline, placed over Nancy's jacket so it
+// The waveform band: gold (BNB brand) cline, placed over BNancy's jacket so it
 // reads clearly and clears the wordmark. asplit feeds the audio to BOTH the
 // waveform filter and the output map — without it ffmpeg silently drops the
 // audio (it gets consumed by showwaves). scale=720:-2 keeps the avatar's aspect
@@ -63,7 +63,7 @@ export type VoiceVideoConfig = {
   maxQueued?: number;
 };
 
-// Renders a Nancy avatar + waveform MP4 from a voice-note audio buffer (the same
+// Renders a BNancy avatar + waveform MP4 from a voice-note audio buffer (the same
 // opus/ogg bytes VoiceService produces). Returns null on any failure (caller
 // degrades gracefully — no video note), mirroring VoiceService's contract.
 export class VoiceVideoService {
@@ -80,8 +80,8 @@ export class VoiceVideoService {
     }
     const ffmpeg = this.config.ffmpegPath ?? "ffmpeg";
     const id = randomUUID();
-    const audioPath = join(tmpdir(), `nancy-voice-${id}.ogg`);
-    const outPath = join(tmpdir(), `nancy-video-${id}.mp4`);
+    const audioPath = join(tmpdir(), `bnancy-voice-${id}.ogg`);
+    const outPath = join(tmpdir(), `bnancy-video-${id}.mp4`);
     const startedAt = performance.now();
     try {
       await writeFile(audioPath, audio);

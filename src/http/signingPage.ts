@@ -10,7 +10,7 @@ export function renderSigningPage(submission: SafeSubmission, walletConnectProje
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   ${brandHead()}
-  <title>Nancy Safe Signature</title>
+  <title>BNancy Safe Signature</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #101318; color: #f7f3e8; }
@@ -45,7 +45,7 @@ export function renderSigningPage(submission: SafeSubmission, walletConnectProje
     const output = document.getElementById("output");
     const telegramUserIdInput = document.getElementById("telegramUserId");
     const telegramWebApp = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-    telegramUserIdInput.value = localStorage.getItem("nancy-telegram-user-id") || "";
+    telegramUserIdInput.value = localStorage.getItem("bnancy-telegram-user-id") || "";
     if (telegramWebApp) {
       telegramWebApp.ready();
       if (telegramWebApp.initDataUnsafe && telegramWebApp.initDataUnsafe.user && telegramWebApp.initDataUnsafe.user.id) {
@@ -69,7 +69,7 @@ export function renderSigningPage(submission: SafeSubmission, walletConnectProje
           method: "personal_sign",
           params: [document.getElementById("hash").textContent, address]
         });
-        localStorage.setItem("nancy-telegram-user-id", telegramUserId);
+        localStorage.setItem("bnancy-telegram-user-id", telegramUserId);
         const response = await fetch("/api/safe-submissions/" + submissionId + "/signatures", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

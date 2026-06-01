@@ -24,7 +24,7 @@ export function renderDeployPage(input: {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   ${brandHead()}
-  <title>Nancy Safe Deploy</title>
+  <title>BNancy Safe Deploy</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #101318; color: #f7f3e8; }

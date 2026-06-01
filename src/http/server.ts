@@ -49,7 +49,7 @@ import { FixedWindowRateLimiter, clientKeyFromHeaders } from "./rateLimiter.js";
 import { setOgBaseUrl } from "./brand.js";
 
 // Bundled brand image served at /og-image.png for social-share previews.
-const OG_IMAGE_PATH = fileURLToPath(new URL("../../assets/nancy.png", import.meta.url));
+const OG_IMAGE_PATH = fileURLToPath(new URL("../../assets/bnancy.png", import.meta.url));
 
 const SignaturePayloadSchema = z.object({
   telegramUserId: z.string().regex(/^\d+$/).optional(),
@@ -278,13 +278,13 @@ export async function startHttpRuntime(appState: App, config: AppConfig): Promis
   await configureTelegramBot(appState.bot);
   Logger.info("[HttpRuntime] Telegram commands configured");
 
-  // Persistent Mini App launcher: the bot DM's menu button opens Nancy's web app.
+  // Persistent Mini App launcher: the bot DM's menu button opens BNancy's web app.
   // (Per-group pool analytics still open from the group's "Pool analytics" button,
   // which carries the chat id; the menu button has no group context.)
   if (config.publicBaseUrl?.startsWith("https://")) {
     try {
       await appState.bot.api.setChatMenuButton({
-        menu_button: { type: "web_app", text: "Open Nancy", web_app: { url: config.publicBaseUrl } }
+        menu_button: { type: "web_app", text: "Open BNancy", web_app: { url: config.publicBaseUrl } }
       });
       Logger.info("[HttpRuntime] Chat menu button set to Mini App", { url: config.publicBaseUrl });
     } catch (error) {

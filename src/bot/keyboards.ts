@@ -132,35 +132,35 @@ export function poolAppKeyboard(chatId: string, publicBaseUrl?: string): InlineK
   return new InlineKeyboard().webApp("Open analytics", url).url("Open in browser", url);
 }
 
-export function nancyListKeyboard(entries: { candidate: { tokenSymbol: string; tokenAddress: string } }[]): InlineKeyboard {
+export function bnancyListKeyboard(entries: { candidate: { tokenSymbol: string; tokenAddress: string } }[]): InlineKeyboard {
   const keyboard = new InlineKeyboard();
   entries.slice(0, 10).forEach((e, i) => {
-    keyboard.text(`🔎 ${e.candidate.tokenSymbol}`, `nancy_detail:${e.candidate.tokenAddress}`);
+    keyboard.text(`🔎 ${e.candidate.tokenSymbol}`, `bnancy_detail:${e.candidate.tokenAddress}`);
     if (i % 2 === 1) keyboard.row();
   });
   return keyboard;
 }
 
-export function nancyLangKeyboard(selected: string[]): InlineKeyboard {
+export function bnancyLangKeyboard(selected: string[]): InlineKeyboard {
   const keyboard = new InlineKeyboard();
   SUPPORTED_LANGUAGES.forEach((l, i) => {
     const on = selected.includes(l.code) ? "✅ " : "";
-    keyboard.text(`${on}${l.flag} ${l.label}`, `nancy_lang:${l.code}`);
+    keyboard.text(`${on}${l.flag} ${l.label}`, `bnancy_lang:${l.code}`);
     if (i % 3 === 2) keyboard.row();
   });
   return keyboard;
 }
 
-export function nancyDetailKeyboard(
+export function bnancyDetailKeyboard(
   tokenAddress: string,
   gatePassed: boolean,
   voiceAvailable = false,
   videoAvailable = false
 ): InlineKeyboard {
-  const keyboard = new InlineKeyboard().text("⬅️ Back to list", "nancy_list");
-  if (gatePassed) keyboard.text("Trade this", `nancy_buy:${tokenAddress}`);
-  if (voiceAvailable) keyboard.text("🔊 Hear it", `nancy_voice:${tokenAddress}`);
-  if (videoAvailable) keyboard.text("🎬 Watch it", `nancy_video:${tokenAddress}`);
+  const keyboard = new InlineKeyboard().text("⬅️ Back to list", "bnancy_list");
+  if (gatePassed) keyboard.text("Trade this", `bnancy_buy:${tokenAddress}`);
+  if (voiceAvailable) keyboard.text("🔊 Hear it", `bnancy_voice:${tokenAddress}`);
+  if (videoAvailable) keyboard.text("🎬 Watch it", `bnancy_video:${tokenAddress}`);
   return keyboard;
 }
 

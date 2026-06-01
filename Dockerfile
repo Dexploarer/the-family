@@ -3,7 +3,7 @@
 # Version pinned to match what the filtergraph was validated against (8.1.1).
 FROM mwader/static-ffmpeg:8.1.1 AS ffmpeg
 
-# Nancy bot — single long-running Bun process (HTTP server + deposit watcher).
+# BNancy bot — single long-running Bun process (HTTP server + deposit watcher).
 # Built for ElizaCloud containers, DigitalOcean App Platform, and any linux/amd64 host.
 FROM oven/bun:1.3.13
 

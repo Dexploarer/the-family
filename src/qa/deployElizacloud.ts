@@ -1,21 +1,21 @@
 /**
- * Create or update Nancy on ElizaCloud **Agents** (Docker sandbox) via the public API.
+ * Create or update BNancy on ElizaCloud **Agents** (Docker sandbox) via the public API.
  * Requires ELIZACLOUD_API_KEY (or ELIZAOS_CLOUD_API_KEY / ELIZA_CLOUD_API_KEY).
  *
  * Usage:
  *   ELIZACLOUD_API_KEY=eliza_... bun src/qa/deployElizacloud.ts
  *   ELIZACLOUD_AGENT_ID=e597a229-... ELIZACLOUD_API_KEY=eliza_... bun src/qa/deployElizacloud.ts
- *   ELIZACLOUD_IMAGE=ghcr.io/dexploarer/nancy:latest bun src/qa/deployElizacloud.ts
+ *   ELIZACLOUD_IMAGE=ghcr.io/dexploarer/bnancy:latest bun src/qa/deployElizacloud.ts
  *
- * ElizaCloud maps host ports to container PORT (default 3000). Nancy must listen on that
+ * ElizaCloud maps host ports to container PORT (default 3000). BNancy must listen on that
  * port — the script sets HTTP_PORT=3000 and expects /api/health (see server.ts).
  */
 
 const API_BASE = process.env["ELIZACLOUD_API_URL"]?.replace(/\/+$/, "") ?? "https://www.elizacloud.ai/api/v1";
-const AGENT_NAME = process.env["ELIZACLOUD_AGENT_NAME"] ?? "nancy";
+const AGENT_NAME = process.env["ELIZACLOUD_AGENT_NAME"] ?? "bnancy";
 const AGENT_ID_OVERRIDE = process.env["ELIZACLOUD_AGENT_ID"];
 const AGENT_DOMAIN = process.env["ELIZACLOUD_AGENT_DOMAIN"] ?? "elizacloud.ai";
-const IMAGE = process.env["ELIZACLOUD_IMAGE"] ?? "ghcr.io/dexploarer/nancy:latest";
+const IMAGE = process.env["ELIZACLOUD_IMAGE"] ?? "ghcr.io/dexploarer/bnancy:latest";
 
 const DEPLOY_ENV_KEYS = [
   "APP_ENV",
@@ -369,7 +369,7 @@ const publicUrl = agentPublicUrl(agentId);
 console.log("Checking public health…");
 await waitForHealth(publicUrl);
 
-console.log("\n✅ Nancy is live on ElizaCloud Agents");
+console.log("\n✅ BNancy is live on ElizaCloud Agents");
 console.log(`   URL:     ${publicUrl}`);
 console.log(`   Health:  ${publicUrl}/health`);
 console.log(`   Webhook: ${publicUrl}/telegram/<secret>`);

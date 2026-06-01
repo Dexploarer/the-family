@@ -28,7 +28,7 @@ describe("voiceService", () => {
       }
     });
     const svc = new VoiceService({ url: "https://tts.example/synthesize" });
-    const result = await svc.synthesize("Hello Nancy", "en");
+    const result = await svc.synthesize("Hello BNancy", "en");
     expect(capturedUrl).toBe("https://tts.example/synthesize");
     expect(capturedBody?.voice).toBe("af_bella");
     expect(result).not.toBeNull();

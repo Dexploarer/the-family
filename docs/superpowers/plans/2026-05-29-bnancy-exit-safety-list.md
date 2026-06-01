@@ -1,16 +1,16 @@
-# Nancy Exit-Safety List (`/nancy`) Implementation Plan
+# BNancy Exit-Safety List (`/bnancy`) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a treasury-aware, exit-safety ranked list (`/nancy`) that re-scores elizaOK's BSC trending feed through Nancy's own liquidity lens, with eliza-1 (4B, self-hosted) writing the per-token "why."
+**Goal:** Add a treasury-aware, exit-safety ranked list (`/bnancy`) that re-scores elizaOK's BSC trending feed through BNancy's own liquidity lens, with eliza-1 (4B, self-hosted) writing the per-token "why."
 
 **Architecture:** A deterministic pipeline (ingest elizaOK → enrich with two-sided PancakeSwap v2 depth + GoPlus LP/safety → `computeExitSafetyScore` pure function → rank/gate) drives everything. eliza-1 only turns the already-decided numbers into prose, behind a one-method `ExplanationService` interface with a templated fallback. BSC chainId 56 throughout. Non-custodial: any actual trade still goes through the existing `tradeService → Safe` flow that owners sign.
 
 **Tech Stack:** Bun, TypeScript (strict, NodeNext, `.js` import extensions), Zod, viem, grammy, `bun:test`. Self-hosted eliza-1 4B GGUF via llama.cpp (OpenAI-compatible) on a DO CPU droplet.
 
-**Spec:** `docs/superpowers/specs/2026-05-29-nancy-exit-safety-list-design.md`
+**Spec:** `docs/superpowers/specs/2026-05-29-bnancy-exit-safety-list-design.md`
 
-**Branch:** `nancy-exit-safety-list` (already checked out).
+**Branch:** `bnancy-exit-safety-list` (already checked out).
 
 **Conventions to honor (read first):**
 - Env is read ONLY in `src/config.ts`. New services take a plain typed config object in their constructor (like `TokenRiskService`), so unit tests pass config directly.
@@ -900,7 +900,7 @@ export class ElizaExplanationService implements ExplanationService {
 function prompt(entry: WatchlistEntry): string {
   return [
     `Token: ${entry.candidate.tokenSymbol} (${entry.candidate.tokenAddress})`,
-    `Nancy grade: ${entry.grade}; gate: ${entry.gate}; score: ${entry.score}/100`,
+    `BNancy grade: ${entry.grade}; gate: ${entry.gate}; score: ${entry.score}/100`,
     `Treasury size used: ${entry.treasurySizeBnb} BNB`,
     entry.roundTripLossBps === undefined ? "Round-trip exit cost: unknown" : `Round-trip exit cost: ${(entry.roundTripLossBps / 100).toFixed(1)}%`,
     entry.liquidityUsd === undefined ? "Liquidity: unknown" : `Liquidity: $${Math.round(entry.liquidityUsd)}`,
@@ -1190,7 +1190,7 @@ git commit -m "feat(app): wire watchlist + explanation services into the bot"
 
 ---
 
-## Task 10: `/nancy` command + keyboard + callbacks + formatting
+## Task 10: `/bnancy` command + keyboard + callbacks + formatting
 
 **Files:**
 - Modify: `src/bot/keyboards.ts`
@@ -1248,7 +1248,7 @@ const GATE_ICON: Record<WatchlistEntry["gate"], string> = { pass: "🟢", warn: 
 
 export function formatWatchlist(entries: WatchlistEntry[], treasurySizeBnb: number): string {
   const lines = [
-    "💛 *Nancy's watch* — elizaOK finds them, I check if your group can get *out*.",
+    "💛 *BNancy's watch* — elizaOK finds them, I check if your group can get *out*.",
     `_Exit-safety at ${treasurySizeBnb} BNB. Not financial advice._`,
     ""
   ];
@@ -1273,7 +1273,7 @@ export function formatWatchlistEntry(entry: WatchlistEntry, explanation: string)
     `Token: \`${entry.candidate.tokenAddress}\``
   ];
   if (entry.reasons.length > 0) lines.push("", "Flags: " + entry.reasons.join("; "));
-  if (entry.gate !== "pass") lines.push("", "_Nancy would not enter this at your size._");
+  if (entry.gate !== "pass") lines.push("", "_BNancy would not enter this at your size._");
   return lines.join("\n");
 }
 ```
@@ -1288,43 +1288,43 @@ Expected: PASS (2 tests).
 In `src/bot/keyboards.ts`, add:
 
 ```ts
-export function nancyListKeyboard(entries: { candidate: { tokenSymbol: string; tokenAddress: string } }[]): InlineKeyboard {
+export function bnancyListKeyboard(entries: { candidate: { tokenSymbol: string; tokenAddress: string } }[]): InlineKeyboard {
   const keyboard = new InlineKeyboard();
   entries.slice(0, 10).forEach((e, i) => {
-    keyboard.text(`🔎 ${e.candidate.tokenSymbol}`, `nancy_detail:${e.candidate.tokenAddress}`);
+    keyboard.text(`🔎 ${e.candidate.tokenSymbol}`, `bnancy_detail:${e.candidate.tokenAddress}`);
     if (i % 2 === 1) keyboard.row();
   });
   return keyboard;
 }
 
-export function nancyDetailKeyboard(tokenAddress: string, gatePassed: boolean): InlineKeyboard {
-  const keyboard = new InlineKeyboard().text("⬅️ Back to list", "nancy_list");
-  if (gatePassed) keyboard.text("Trade this", `nancy_buy:${tokenAddress}`);
+export function bnancyDetailKeyboard(tokenAddress: string, gatePassed: boolean): InlineKeyboard {
+  const keyboard = new InlineKeyboard().text("⬅️ Back to list", "bnancy_list");
+  if (gatePassed) keyboard.text("Trade this", `bnancy_buy:${tokenAddress}`);
   return keyboard;
 }
 ```
 
-- [ ] **Step 6: Register the `/nancy` command and callbacks in `bot.ts`**
+- [ ] **Step 6: Register the `/bnancy` command and callbacks in `bot.ts`**
 
 Add the imports in `bot.ts` (with the other keyboard/format imports):
 
 ```ts
-import { nancyListKeyboard, nancyDetailKeyboard } from "./keyboards.js";
+import { bnancyListKeyboard, bnancyDetailKeyboard } from "./keyboards.js";
 import { formatWatchlist, formatWatchlistEntry } from "./watchlistView.js";
 ```
 
 Register the command near the other `bot.command(...)` registrations (e.g. after `buy`):
 
 ```ts
-  bot.command("nancy", async (ctx) => {
-    await handleUserCommand(ctx, "nancy", async () => {
+  bot.command("bnancy", async (ctx) => {
+    await handleUserCommand(ctx, "bnancy", async () => {
       const chatId = requireChatId(ctx.chat?.id);
       const fromId = requireTelegramUserId(ctx.from?.id);
       const treasuryBnb = await groupTreasuryBnb(dependencies, chatId, fromId);
       const list = await dependencies.watchlistService.getList(Number(chatId), treasuryBnb);
       await ctx.reply(formatWatchlist(list, treasuryBnb ?? dependencies.config.watchlistDefaultSizeBnb), {
         parse_mode: "Markdown",
-        reply_markup: nancyListKeyboard(list)
+        reply_markup: bnancyListKeyboard(list)
       });
     });
   });
@@ -1333,7 +1333,7 @@ Register the command near the other `bot.command(...)` registrations (e.g. after
 Register the callbacks near the other `bot.callbackQuery(...)` handlers:
 
 ```ts
-  bot.callbackQuery("nancy_list", async (ctx) => {
+  bot.callbackQuery("bnancy_list", async (ctx) => {
     await handleCallback(ctx, async () => {
       const chatId = requireChatId(ctx.chat?.id);
       const fromId = requireTelegramUserId(ctx.from?.id);
@@ -1341,12 +1341,12 @@ Register the callbacks near the other `bot.callbackQuery(...)` handlers:
       const list = await dependencies.watchlistService.getList(Number(chatId), treasuryBnb);
       await ctx.editMessageText(formatWatchlist(list, treasuryBnb ?? dependencies.config.watchlistDefaultSizeBnb), {
         parse_mode: "Markdown",
-        reply_markup: nancyListKeyboard(list)
+        reply_markup: bnancyListKeyboard(list)
       });
     });
   });
 
-  bot.callbackQuery(/^nancy_detail:(.+)$/, async (ctx) => {
+  bot.callbackQuery(/^bnancy_detail:(.+)$/, async (ctx) => {
     await handleCallback(ctx, async () => {
       const chatId = requireChatId(ctx.chat?.id);
       const fromId = requireTelegramUserId(ctx.from?.id);
@@ -1361,17 +1361,17 @@ Register the callbacks near the other `bot.callbackQuery(...)` handlers:
       const explanation = await dependencies.explanationService.explain(entry);
       await ctx.editMessageText(formatWatchlistEntry(entry, explanation), {
         parse_mode: "Markdown",
-        reply_markup: nancyDetailKeyboard(entry.candidate.tokenAddress, entry.gate === "pass")
+        reply_markup: bnancyDetailKeyboard(entry.candidate.tokenAddress, entry.gate === "pass")
       });
     });
   });
 
-  bot.callbackQuery(/^nancy_buy:(.+)$/, async (ctx) => {
+  bot.callbackQuery(/^bnancy_buy:(.+)$/, async (ctx) => {
     await handleCallback(ctx, async () => {
       const tokenAddress = ctx.match[1] ?? "";
       await ctx.answerCallbackQuery();
       await ctx.reply(
-        `To trade this, a trader runs:\n\`/buy ${tokenAddress} <bnbAmount>\`\n\nNancy re-checks risk, builds the Safe transaction, and the owners sign — she never moves funds herself.`,
+        `To trade this, a trader runs:\n\`/buy ${tokenAddress} <bnbAmount>\`\n\nBNancy re-checks risk, builds the Safe transaction, and the owners sign — she never moves funds herself.`,
         { parse_mode: "Markdown" }
       );
     });
@@ -1402,7 +1402,7 @@ Expected: PASS (all tests, including the new ones).
 
 ```bash
 git add src/bot/keyboards.ts src/bot/watchlistView.ts src/bot/bot.ts tests/watchlistView.test.ts
-git commit -m "feat(bot): /nancy command, detail view, and trade bridge"
+git commit -m "feat(bot): /bnancy command, detail view, and trade bridge"
 ```
 
 ---
@@ -1412,7 +1412,7 @@ git commit -m "feat(bot): /nancy command, detail view, and trade bridge"
 **Files:**
 - Create: `docs/ops/eliza-1-inference.md`
 - Modify: `.do/app.yaml` (document the new env keys as comments)
-- Modify: `README.md` (one line: the `/nancy` command + the eliza-1 dependency)
+- Modify: `README.md` (one line: the `/bnancy` command + the eliza-1 dependency)
 
 > This task is **ops + docs**, not unit-tested code. The feature already works without the droplet (templated fallback). Do it after Task 10 so the bot is functional, then point `ELIZA_MODEL_URL` at the droplet to upgrade the prose.
 
@@ -1443,7 +1443,7 @@ In `.do/app.yaml`, extend the existing "set in the dashboard" comment block to l
 
 - [ ] **Step 4: README line**
 
-Add `/nancy` to the command list in `README.md` with a one-line description ("exit-safety reality check on elizaOK's trending list — due diligence, not buy calls").
+Add `/bnancy` to the command list in `README.md` with a one-line description ("exit-safety reality check on elizaOK's trending list — due diligence, not buy calls").
 
 - [ ] **Step 5: Final full verify + commit**
 
@@ -1452,14 +1452,14 @@ Expected: PASS.
 
 ```bash
 git add docs/ops/eliza-1-inference.md .do/app.yaml README.md
-git commit -m "docs(ops): eliza-1 inference droplet runbook + /nancy docs"
+git commit -m "docs(ops): eliza-1 inference droplet runbook + /bnancy docs"
 ```
 
 - [ ] **Step 6: Open a PR (do NOT auto-deploy to main mid-feature)**
 
 ```bash
-git push -u origin nancy-exit-safety-list
-gh pr create --base main --title "Nancy exit-safety list (/nancy)" --body "Implements docs/superpowers/specs/2026-05-29-nancy-exit-safety-list-design.md"
+git push -u origin bnancy-exit-safety-list
+gh pr create --base main --title "BNancy exit-safety list (/bnancy)" --body "Implements docs/superpowers/specs/2026-05-29-bnancy-exit-safety-list-design.md"
 ```
 
 ---
@@ -1468,7 +1468,7 @@ gh pr create --base main --title "Nancy exit-safety list (/nancy)" --body "Imple
 
 **1. Spec coverage:**
 - §2 deterministic line → Task 5 (pure scorer), Task 7 (LLM prose-only behind interface), Task 8 (LLM not in scoring path). ✓
-- §3 decisions → exit-safety lens (Task 5/8), elizaOK universe (Task 6/8), eliza-1 4B in v1 (Task 7/11), lazy verdict (Task 10 detail callback), `/nancy` (Task 10), framing (Task 10 copy), v2 only (Task 3). ✓
+- §3 decisions → exit-safety lens (Task 5/8), elizaOK universe (Task 6/8), eliza-1 4B in v1 (Task 7/11), lazy verdict (Task 10 detail callback), `/bnancy` (Task 10), framing (Task 10 copy), v2 only (Task 3). ✓
 - §4 components → config (T1), feed (T6), pancake (T3), risk LP (T4), watchlist (T8), explanation (T7), bot (T10), no new storage (none added). ✓
 - §5 scorer gate conditions → Task 5 tests (honeypot, sell tax, unlocked LP, exit slippage, min liquidity, unknown-depth, misfire→F). ✓
 - §7 error handling → feed AppError (T6), per-token "unknown" downgrade (T8 `safeRisk`/`roundTrip`), eliza fallback (T7). ✓
@@ -1479,4 +1479,4 @@ gh pr create --base main --title "Nancy exit-safety list (/nancy)" --body "Imple
 
 **3. Type consistency:** `ExitSafetySignals`/`ExitSafetyThresholds`/`ExitSafetyResult` (T5) are reused verbatim in T8 and the app wiring (T9). `WatchlistEntry` (T2) fields (`gate`, `grade`, `score`, `roundTripLossBps?`, `liquidityUsd?`, `treasurySizeBnb`) are produced in T8 and consumed in T7/T10. `TokenRiskReport` LP fields (T2/T4) feed the scorer signals (T8). `quoteTokenSell` (T3) is called by T8's `roundTrip`. Names align.
 
-**Known follow-up (not v1):** the `nancy_buy` bridge currently replies with the prefilled `/buy` command rather than seeding the prompt flow — intentional v1 simplicity (reuses the existing risk-gated, owner-signed trade path); a one-tap prompt-seeded flow is a later nicety.
+**Known follow-up (not v1):** the `bnancy_buy` bridge currently replies with the prefilled `/buy` command rather than seeding the prompt flow — intentional v1 simplicity (reuses the existing risk-gated, owner-signed trade path); a one-tap prompt-seeded flow is a later nicety.

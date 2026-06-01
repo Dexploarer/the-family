@@ -1,15 +1,15 @@
-# Nancy non-custodial wallet & UX redesign
+# BNancy non-custodial wallet & UX redesign
 
 **Date:** 2026-05-28
 **Status:** Approved (design)
 
 ## Problem
 
-Nancy currently supports **custodial "managed" wallets**: the bot generates a keypair, encrypts the private key with `WALLET_ENCRYPTION_KEY`, stores it, and signs Safe transactions on the user's behalf ("Approve with managed wallet"). This holds custody of user keys.
+BNancy currently supports **custodial "managed" wallets**: the bot generates a keypair, encrypts the private key with `WALLET_ENCRYPTION_KEY`, stores it, and signs Safe transactions on the user's behalf ("Approve with managed wallet"). This holds custody of user keys.
 
 Three problems to fix:
 
-1. **Custody must go.** Every wallet should be non-custodial — Nancy must never persist a private key.
+1. **Custody must go.** Every wallet should be non-custodial — BNancy must never persist a private key.
 2. **Signing/linking is clumsy.** Linking and Safe approvals require the user to copy a message, sign it in another app, and paste a signature back (`/link_start` → `/link_submit`). It should be one click, like the Dialect EVM blink starter.
 3. **The bot is hard to drive.** Only 5 inline buttons exist; most actions are slash-commands with terse failures. There is no way to cancel Safe creation, unlink a Safe, or cancel a queued withdrawal.
 
@@ -37,7 +37,7 @@ Each phase is shippable and must leave `bun run verify` green.
 ### Phase 1 — Non-custodial wallet model (foundation)
 
 - Delete `ManagedWalletService`, `WalletEncryptionService`, the `ManagedWallet` type, the `WALLET_ENCRYPTION_KEY` config, and the `getManagedWallet`/`saveManagedWallet` methods from the `Repository` interface and both the memory and postgres implementations (and the postgres schema/migration).
-- `/wallet_generate` (DM-only): create a keypair, DM the **private key + address once**, and store **only the public key** as a `linked` `WalletLink` for that Telegram ID. Nancy never persists the key. In a group chat it replies "DM me to generate a wallet."
+- `/wallet_generate` (DM-only): create a keypair, DM the **private key + address once**, and store **only the public key** as a `linked` `WalletLink` for that Telegram ID. BNancy never persists the key. In a group chat it replies "DM me to generate a wallet."
 - Collapse to a single concept — a user's **linked wallet(s)** (`WalletLink`). A generated wallet is linked-by-construction; a brought-your-own wallet is linked via the Phase 2 signature proof.
 - `/safe_group` join: members join with a linked wallet. The "Generate + join" (managed) button becomes "Use my wallet" → if the user has no linked wallet, route them to generate (DM) or link.
 - Remove the "Approve with managed wallet" button and the `safe_approve` / `managed_join` managed code paths from `safeCallbacks.ts` and `safeGroupSetupService.ts`.

@@ -1,5 +1,5 @@
 // Bounds how many expensive operations run at once, with a bounded wait queue.
-// Nancy is a single process (CLAUDE.md keeps it single-instance so the in-process
+// BNancy is a single process (CLAUDE.md keeps it single-instance so the in-process
 // mutex can serialize money mutations), so an unbounded burst of CPU-heavy ffmpeg
 // renders could starve the deposit watcher and Safe/pool work. This caps that.
 //

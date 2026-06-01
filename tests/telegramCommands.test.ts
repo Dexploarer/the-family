@@ -13,10 +13,12 @@ describe("BOT_COMMANDS", () => {
     expect(commands).toContain("pool_withdraw");
     expect(commands).toContain("buy");
     expect(commands).toContain("flap_launch");
+    expect(commands).toContain("bnancy");
+    expect(commands).not.toContain("bnancy".slice(1));
   });
 
-  it("uses Nancy as the bot identity and keeps metadata inside Telegram limits", () => {
-    expect(BOT_NAME).toBe("Nancy, the Golden Girl of Binance");
+  it("uses BNancy as the bot identity and keeps metadata inside Telegram limits", () => {
+    expect(BOT_NAME).toBe("BNancy, the Golden Girl of Binance");
     expect(BOT_NAME.length).toBeLessThanOrEqual(64);
     expect(BOT_SHORT_DESCRIPTION.length).toBeLessThanOrEqual(120);
     expect(BOT_DESCRIPTION.length).toBeLessThanOrEqual(512);

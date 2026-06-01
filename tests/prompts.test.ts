@@ -115,7 +115,7 @@ describe("routePromptInput", () => {
     const deps = {
       repository,
       walletLinkService,
-      config: { publicBaseUrl: "https://nancy.example" }
+      config: { publicBaseUrl: "https://bnancy.example" }
     } as unknown as BotDependencies;
 
     const { ctx, replies, markups } = fakeContext("0x1111111111111111111111111111111111111111");
@@ -124,7 +124,7 @@ describe("routePromptInput", () => {
     expect(handled).toBe(true);
     expect(replies[0]).toContain("connect this wallet");
     // the link URL is now a tappable button, not pasted text
-    expect(JSON.stringify(markups[0])).toContain("https://nancy.example/link/");
+    expect(JSON.stringify(markups[0])).toContain("https://bnancy.example/link/");
     // the flow began a pending wallet link for that exact address
     const link = await repository.getWalletLink(USER, "0x1111111111111111111111111111111111111111");
     expect(link?.status).toBe("pending");

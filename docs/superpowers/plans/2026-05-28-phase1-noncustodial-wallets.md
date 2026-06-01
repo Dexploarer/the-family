@@ -2,7 +2,7 @@
 
 > **For agentic workers:** Use superpowers:executing-plans to implement task-by-task. Steps use checkbox (`- [ ]`) syntax.
 
-**Goal:** Remove all custodial ("managed") wallet code so Nancy never stores a private key; `/wallet_generate` creates a keypair, DMs the key once, and stores only the public key as a linked wallet.
+**Goal:** Remove all custodial ("managed") wallet code so BNancy never stores a private key; `/wallet_generate` creates a keypair, DMs the key once, and stores only the public key as a linked wallet.
 
 **Architecture:** Collapse `ManagedWallet` into the existing `WalletLink` concept. A new `WalletLinkService.generateLinkedWallet()` generates a keypair, persists a `linked` `WalletLink`, and returns the private key for one-time DM delivery (never persisted). Delete `ManagedWalletService` and `WalletEncryptionService`. The gas-only executor key is untouched.
 
@@ -134,7 +134,7 @@ export function formatGeneratedWallet(generated: { link: WalletLink; privateKey:
   return [
     "New non-custodial wallet",
     `Address: ${generated.link.address}`,
-    "Nancy does NOT store this key. Save it now — it will not be shown again.",
+    "BNancy does NOT store this key. Save it now — it will not be shown again.",
     "Import it into your own wallet (MetaMask/Rabby/etc.) to sign.",
     generated.privateKey
   ].join("\n");

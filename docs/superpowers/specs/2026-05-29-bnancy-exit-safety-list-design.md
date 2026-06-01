@@ -1,18 +1,18 @@
-# Nancy — Exit-Safety List (`/nancy`) — Design Spec
+# BNancy — Exit-Safety List (`/bnancy`) — Design Spec
 
 - **Date:** 2026-05-29
 - **Status:** Approved (design); pending implementation plan
-- **Owner:** Nancy (BSC group-trading Telegram bot)
+- **Owner:** BNancy (BSC group-trading Telegram bot)
 
 ## 1. Summary
 
-Add a ranked, treasury-aware **exit-safety reality check** to Nancy, surfaced by the
-`/nancy` command. It ingests elizaOK's trending list (BSC discovery feed), runs each
-candidate through Nancy's own **liquidity-pool lens** (two-sided exit depth, LP
+Add a ranked, treasury-aware **exit-safety reality check** to BNancy, surfaced by the
+`/bnancy` command. It ingests elizaOK's trending list (BSC discovery feed), runs each
+candidate through BNancy's own **liquidity-pool lens** (two-sided exit depth, LP
 lock/holder safety, MEV exposure) plus her existing safety research, and produces a
 **deterministic grade + pass/warn/block gate + ranking**. The self-hosted **eliza-1
 (4B)** model writes the human-readable *"why"* for each token — and only that. Positioned
-as the sister/complement to elizaOK: **"elizaOK finds it; Nancy checks if your group can
+as the sister/complement to elizaOK: **"elizaOK finds it; BNancy checks if your group can
 get out."** Not financial advice.
 
 ## 2. The non-negotiable architectural line
@@ -35,10 +35,10 @@ If any change puts the LLM in the scoring or gating path, the design is wrong.
 |---|----------|--------|
 | 1 | Lens role | eliza-1 = research **combiner/synthesizer** for the *explanation* only |
 | 2 | LP lens anchor | **Exit-safety**: two-sided slippage at the group's treasury size + LP lock/holder safety; momentum is a secondary input |
-| 3 | Candidate universe (v1) | **elizaOK's candidates only**, re-scored. Nancy hunting her own = phase 3 |
+| 3 | Candidate universe (v1) | **elizaOK's candidates only**, re-scored. BNancy hunting her own = phase 3 |
 | 4 | Model tier | **eliza-1 4B** GGUF (Q4_K_M), self-hosted on a DO **CPU droplet**, included **in v1** |
 | 5 | Verdict generation | **Lazy** — only when a user opens a token; templated fallback if model down |
-| 6 | Command name | **`/nancy`** |
+| 6 | Command name | **`/bnancy`** |
 | 7 | Framing | **Exit-safety reality check** (due diligence), not buy recommendations |
 | 8 | DEX scope (v1) | **PancakeSwap v2** reserves; Infinity CL depth/hooks = phase 2 |
 
@@ -96,13 +96,13 @@ entity (none new in v1).
    - Generated **lazily** (per token, on detail-open), so the 4B box is never asked to
      narrate the whole list on each refresh.
 
-7. **`src/bot/`** *(new command)* — `/nancy`:
-   - Renders the deterministic list: `symbol · Nancy grade · key flags · elizaOK momentum ·
+7. **`src/bot/`** *(new command)* — `/bnancy`:
+   - Renders the deterministic list: `symbol · BNancy grade · key flags · elizaOK momentum ·
      one-line headline`. Per-token inline button → detail view (lazy eliza-1 "why").
    - If `gate === "pass"`, a clearly-labeled **"Prepare proposal"** button deep-links into
      the **existing** `tradeService` → `safeSubmissionService` → Safe flow (which re-runs
      its own deterministic gate; owners sign; chain pinned to 56 by `ensureChain`).
-   - Header copy: *"Exit-safety check — not financial advice. elizaOK discovery × Nancy
+   - Header copy: *"Exit-safety check — not financial advice. elizaOK discovery × BNancy
      due-diligence."* Thin handler; logic stays in `watchlistService`.
 
 8. **Storage** — none new in v1 (computed on demand + in-memory cache). LP-flow-over-time
@@ -141,12 +141,12 @@ randomness, no network inside the function (enrichment happens before it).
 
 ## 6. Data flow
 
-`/nancy` → `watchlistService.getList(chatId)` → elizaOK feed → parallel enrich (depth +
+`/bnancy` → `watchlistService.getList(chatId)` → elizaOK feed → parallel enrich (depth +
 safety + MEV at treasury size) → `computeExitSafetyScore` → rank/cap → bot renders fast →
 user taps token → `explanationService.explain` (lazy eliza-1, template fallback) → if
 `gate==="pass"`, "Prepare proposal" → existing Safe flow (own gate, owner signatures, chain 56).
 
-## 7. Error handling (Nancy's convention)
+## 7. Error handling (BNancy's convention)
 
 - elizaOK down/malformed → `AppError`; list shows "discovery feed unavailable" or last
   cache; never crashes.
@@ -187,17 +187,17 @@ user taps token → `explanationService.explain` (lazy eliza-1, template fallbac
 ## 10. Phasing
 
 - **v1 (this build):** elizaOK ingest + v2 two-sided depth + GoPlus LP fields + MEV
-  heuristic + `computeExitSafetyScore` gate + `/nancy` command + eliza-1 4B lazy prose
+  heuristic + `computeExitSafetyScore` gate + `/bnancy` command + eliza-1 4B lazy prose
   (templated fallback) + the CPU droplet + trade bridge.
 - **Phase 2:** PancakeSwap Infinity CL depth + hook inspection (singleton PoolManager, tick
   math) — richer, forward-looking depth and exit-trap detection.
 - **Phase 3:** LP add/remove flow over time (needs persistence; both repositories +
-  serialization); Nancy hunting her own candidates beyond elizaOK.
+  serialization); BNancy hunting her own candidates beyond elizaOK.
 
 ## 11. Risks & open items
 
 - **Unreliable input feed:** elizaOK's list includes stale/misfiring entries (the design
-  *relies* on Nancy's gate to catch these — see test in §8).
+  *relies* on BNancy's gate to catch these — see test in §8).
 - **Positioning:** verdicts on a real-money product; mitigated by the exit-safety framing
   ("not financial advice"), elizaOK attribution, visible deterministic gate, and
   non-custodial owner-signing.
@@ -208,5 +208,5 @@ user taps token → `explanationService.explain` (lazy eliza-1, template fallbac
 
 ## 12. Out of scope (v1)
 
-Infinity CL/hook reads; LP time-series/flow; Nancy's own pool discovery; auto-execution
+Infinity CL/hook reads; LP time-series/flow; BNancy's own pool discovery; auto-execution
 (humans always sign); multichain (BSC only — chainId 56).

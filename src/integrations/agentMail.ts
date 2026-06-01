@@ -27,7 +27,7 @@ async function parseError(response: Response): Promise<string> {
   }
 }
 
-/** Idempotent inbox for Nancy operator invites (display name only; address is assigned by AgentMail). */
+/** Idempotent inbox for BNancy operator invites (display name only; address is assigned by AgentMail). */
 export async function ensureOperatorInviteInbox(apiKey: string, inboxId?: string): Promise<string> {
   if (inboxId !== undefined && inboxId.trim().length > 0) {
     return inboxId.trim();
@@ -36,8 +36,8 @@ export async function ensureOperatorInviteInbox(apiKey: string, inboxId?: string
     method: "POST",
     headers: authHeaders(apiKey),
     body: JSON.stringify({
-      client_id: "nancy-operator-invites",
-      display_name: "Nancy Operator"
+      client_id: "bnancy-operator-invites",
+      display_name: "BNancy Operator"
     })
   });
   if (!response.ok) {

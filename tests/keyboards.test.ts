@@ -6,7 +6,7 @@ import {
   executePageKeyboard,
   flapLaunchKeyboard,
   linkPageKeyboard,
-  nancyDetailKeyboard,
+  bnancyDetailKeyboard,
   poolAppKeyboard,
   safeGroupKeyboard,
   safeSubmissionKeyboard,
@@ -73,8 +73,8 @@ describe("page-open keyboards", () => {
   });
 
   it("group fallback deep-links into the bot DM carrying the start action", () => {
-    const b = buttons(dmActionKeyboard("nancy_bsc_bot", "link", "Link in our DM →"))[0]!;
-    expect(b.url).toBe("https://t.me/nancy_bsc_bot?start=link");
+    const b = buttons(dmActionKeyboard("bnancy_bsc_bot", "link", "Link in our DM →"))[0]!;
+    expect(b.url).toBe("https://t.me/bnancy_bsc_bot?start=link");
     expect(b.text).toBe("Link in our DM →");
   });
 
@@ -114,8 +114,8 @@ describe("result action keyboards (no ID typing)", () => {
     expect(d).toContain("safe_execute:safe_1");
   });
 
-  it("nancy detail offers Watch it only when video is available", () => {
-    expect(data(nancyDetailKeyboard("0xabc", false, true, true))).toContain("nancy_video:0xabc");
-    expect(data(nancyDetailKeyboard("0xabc", false, true, false))).not.toContain("nancy_video:0xabc");
+  it("bnancy detail offers Watch it only when video is available", () => {
+    expect(data(bnancyDetailKeyboard("0xabc", false, true, true))).toContain("bnancy_video:0xabc");
+    expect(data(bnancyDetailKeyboard("0xabc", false, true, false))).not.toContain("bnancy_video:0xabc");
   });
 });

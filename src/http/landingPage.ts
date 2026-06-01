@@ -5,13 +5,13 @@ import type { BrandingSnapshot } from "../services/brandingService.js";
 // gold-dust canvas, Lenis buttery smooth-scroll, staggered reveals. Telegram-aware
 // (expands + themes if opened inside Telegram); otherwise drives to the bot.
 export function renderLandingPage(
-  botUsername = "nancy_bsc_bot",
+  botUsername = "bnancy_bsc_bot",
   options?: { showAdminLink?: boolean; branding?: BrandingSnapshot }
 ): string {
   const branding = options?.branding;
-  const productName = branding?.productName ?? "Nancy";
+  const productName = branding?.productName ?? "BNancy";
   const tagline = branding?.tagline ?? "the Golden Girl of Binance";
-  const footerNote = branding?.footerNote ?? "Nancy is infrastructure only — no profit, token, or execution guarantees.";
+  const footerNote = branding?.footerNote ?? "BNancy is infrastructure only — no profit, token, or execution guarantees.";
   const telegramUrl = `https://t.me/${botUsername}`;
   const adminLink =
     options?.showAdminLink === true
@@ -151,7 +151,7 @@ export function renderLandingPage(
         <p class="kicker reveal">BSC · Safe Multisig · Non-Custodial</p>
         <h1 class="reveal" style="margin-top:18px">The <em class="gold">Golden</em><br/>Girl of <span class="gold">Binance</span></h1>
         <p class="deck reveal">A shared trading desk for your Telegram group — poured in gold, run on a Safe you control.</p>
-        <p class="sub reveal">Pool BNB into share-based accounting, prepare token buys and Flap launches as Safe transactions your owners sign, and watch every share and PnL live. Nancy never holds your keys.</p>
+        <p class="sub reveal">Pool BNB into share-based accounting, prepare token buys and Flap launches as Safe transactions your owners sign, and watch every share and PnL live. BNancy never holds your keys.</p>
         <div class="cta-row reveal">
           <a class="btn" id="cta" href="${telegramUrl}">💛 Open ${productName} in Telegram</a>
           <a class="btn-ghost" href="${telegramUrl}">@${botUsername}</a>
@@ -159,14 +159,14 @@ export function renderLandingPage(
       </div>
       <div class="portrait-wrap reveal">
         <div class="portrait-glow"></div>
-        <img class="portrait" src="/og-image.png" alt="Nancy, the Golden Girl of Binance" />
+        <img class="portrait" src="/og-image.png" alt="BNancy, the Golden Girl of Binance" />
       </div>
     </header>
 
     <section>
       <div class="sec-head reveal"><span class="num gold">01 —</span><h2>What she runs</h2></div>
       <div class="features">
-        <div class="feat reveal"><span class="idx gold">I</span><div><h3>A Safe you control</h3><p>One Safe multisig per group, deployed from an owner's own wallet. Nancy prepares transactions and collects signatures — custody never leaves your Safe.</p></div></div>
+        <div class="feat reveal"><span class="idx gold">I</span><div><h3>A Safe you control</h3><p>One Safe multisig per group, deployed from an owner's own wallet. BNancy prepares transactions and collects signatures — custody never leaves your Safe.</p></div></div>
         <div class="feat reveal"><span class="idx gold">II</span><div><h3>Pooled, to the wei</h3><p>Deposits mint deterministic shares with live NAV, ownership, and unrealized PnL per member. Verified on-chain before a single share is minted.</p></div></div>
         <div class="feat reveal"><span class="idx gold">III</span><div><h3>Trade &amp; launch</h3><p>Token buys via PancakeSwap and Flap token launches become Safe transactions your owners sign and execute from their own wallets.</p></div></div>
         <div class="feat reveal"><span class="idx gold">IV</span><div><h3>All inside Telegram</h3><p>Button-driven — no addresses to type — with a live analytics Mini App for the whole group's breakdown.</p></div></div>
@@ -203,7 +203,7 @@ export function renderLandingPage(
     if (tg && tg.initData !== undefined) {
       try { tg.ready(); tg.expand(); } catch (e) {}
       const cta = document.getElementById("cta");
-      if (cta) { cta.textContent = "💛 Open Nancy"; cta.addEventListener("click", (ev) => { ev.preventDefault(); try { tg.openTelegramLink("${telegramUrl}"); } catch (e) { location.href = "${telegramUrl}"; } }); }
+      if (cta) { cta.textContent = "💛 Open BNancy"; cta.addEventListener("click", (ev) => { ev.preventDefault(); try { tg.openTelegramLink("${telegramUrl}"); } catch (e) { location.href = "${telegramUrl}"; } }); }
     }
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;

@@ -1,6 +1,6 @@
-# Deploy Nancy on ElizaCloud Agents
+# Deploy BNancy on ElizaCloud Agents
 
-Nancy is a **standalone Bun Telegram bot**, not an elizaOS agent runtime. On ElizaCloud it runs as a **custom Docker image** on the **Agents** product (Hetzner Docker sandboxes behind `https://<agent-id>.elizacloud.ai`).
+BNancy is a **standalone Bun Telegram bot**, not an elizaOS agent runtime. On ElizaCloud it runs as a **custom Docker image** on the **Agents** product (Hetzner Docker sandboxes behind `https://<agent-id>.elizacloud.ai`).
 
 The legacy **Containers** API (`/api/v1/containers`) was removed upstream; use **Agents** (`/api/v1/eliza/agents`) instead.
 
@@ -9,19 +9,19 @@ The legacy **Containers** API (`/api/v1/containers`) was removed upstream; use *
 | Field | Value |
 |-------|-------|
 | Registry | `ghcr.io` |
-| Image | `ghcr.io/dexploarer/nancy:latest` |
+| Image | `ghcr.io/dexploarer/bnancy:latest` |
 | Digest pin | Prefer `:sha-<commit>` or `@sha256:…` for production |
 | Platform | **linux/amd64** (built by `.github/workflows/publish.yml`) |
 | Published on | Push to `main` (when Docker/source paths change) or manual **workflow_dispatch** |
 
-After the first CI push, open **GitHub → Packages → nancy → Package settings → Change visibility → Public** so ElizaCloud can pull without private-registry credentials.
+After the first CI push, open **GitHub → Packages → bnancy → Package settings → Change visibility → Public** so ElizaCloud can pull without private-registry credentials.
 
 ## Agent settings (dashboard / API)
 
 | Setting | Value | Notes |
 |---------|-------|-------|
-| **Flavor** | Custom Docker image | Dashboard: paste `ghcr.io/dexploarer/nancy:latest` |
-| **Listen port** | `3000` | ElizaCloud maps host ports to container `PORT` (3000). Nancy reads `HTTP_PORT` — deploy script sets **`HTTP_PORT=3000`**. |
+| **Flavor** | Custom Docker image | Dashboard: paste `ghcr.io/dexploarer/bnancy:latest` |
+| **Listen port** | `3000` | ElizaCloud maps host ports to container `PORT` (3000). BNancy reads `HTTP_PORT` — deploy script sets **`HTTP_PORT=3000`**. |
 | **Health** | `/health` or `/api/health` | Both return `{"ok":true}`. Eliza's internal probe also accepts `/` (landing page). |
 | **Instances** | `1` | **Never scale horizontally** — pool accounting uses an in-process mutex. |
 
@@ -90,7 +90,7 @@ LOG_LEVEL=info
 
 ### `PUBLIC_BASE_URL`
 
-Set to **`https://<agent-uuid>.elizacloud.ai`** (the public URL ElizaCloud assigns each agent). Nancy uses it for Telegram webhooks, wallet pages, and Mini App links.
+Set to **`https://<agent-uuid>.elizacloud.ai`** (the public URL ElizaCloud assigns each agent). BNancy uses it for Telegram webhooks, wallet pages, and Mini App links.
 
 The deploy script sets this automatically from the agent id after create/provision.
 
@@ -111,11 +111,11 @@ Target an existing dashboard agent:
 ELIZACLOUD_AGENT_ID=e597a229-... ELIZACLOUD_API_KEY=eliza_... bun run deploy:elizacloud
 ```
 
-The script creates an agent named `nancy` (or reuses by name/id), enqueues **provision**, polls until `status=running`, and verifies `https://<id>.elizacloud.ai/health`.
+The script creates an agent named `bnancy` (or reuses by name/id), enqueues **provision**, polls until `status=running`, and verifies `https://<id>.elizacloud.ai/health`.
 
 **Env updates:** the public API only accepts `environmentVars` on **create**. To rotate secrets on an existing agent, use the ElizaCloud dashboard or delete the agent and re-run the script.
 
-**Dashboard alternative:** Agents → Create → Custom Docker image → `ghcr.io/dexploarer/nancy:latest` → paste env vars → Start.
+**Dashboard alternative:** Agents → Create → Custom Docker image → `ghcr.io/dexploarer/bnancy:latest` → paste env vars → Start.
 
 ## First-boot checklist
 
@@ -127,15 +127,15 @@ The script creates an agent named `nancy` (or reuses by name/id), enqueues **pro
 ## Local smoke (before ElizaCloud)
 
 ```bash
-docker build -t nancy:local .
-docker run --rm -p 8080:8080 --env-file .env.production nancy:local
+docker build -t bnancy:local .
+docker run --rm -p 8080:8080 --env-file .env.production bnancy:local
 curl -s http://127.0.0.1:8080/health
 ```
 
 On Apple Silicon:
 
 ```bash
-docker buildx build --platform linux/amd64 -t nancy:local .
+docker buildx build --platform linux/amd64 -t bnancy:local .
 ```
 
 ## Graceful shutdown

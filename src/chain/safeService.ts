@@ -104,7 +104,7 @@ export class SafeService {
         contractTransactionHash: input.safeTxHash,
         sender: input.senderAddress,
         signature: input.senderSignature,
-        origin: "Nancy"
+        origin: "BNancy"
       })
     });
   }

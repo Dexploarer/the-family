@@ -226,7 +226,7 @@ export async function createSimulationWallet(
   const privateKey = simulationPrivateKey(privateKeyIndex);
   const account = privateKeyToAccount(privateKey);
   // Exercise the real non-custodial linking proof path: begin, sign with the
-  // owner's own key, then complete. Nancy never sees the private key.
+  // owner's own key, then complete. BNancy never sees the private key.
   const { link } = await walletLinkService.beginLink(telegramUserId, account.address);
   const signature = await account.signMessage({ message: buildWalletLinkMessage(link) });
   await walletLinkService.completeLink(telegramUserId, account.address, signature);

@@ -403,8 +403,8 @@ export const PROMPT_FLOWS: Record<string, PromptFlow> = {
     title: "Upload Flap token metadata",
     adminOnly: true,
     fields: [
-      { label: "Token name", example: "Nancy Coin", validate: validateNonEmpty("Name") },
-      { label: "Token symbol", example: "NANCY", validate: validateNonEmpty("Symbol") },
+      { label: "Token name", example: "BNancy Coin", validate: validateNonEmpty("Name") },
+      { label: "Token symbol", example: "BNANCY", validate: validateNonEmpty("Symbol") },
       { label: "Description", example: "Group token launched through Flap", validate: validateNonEmpty("Description") },
       { label: "Image URI", example: "ipfs://bafy-image...", validate: validateNonEmpty("Image URI") }
     ],
@@ -424,8 +424,8 @@ export const PROMPT_FLOWS: Record<string, PromptFlow> = {
     title: "Create a Flap launch proposal",
     adminOnly: true,
     fields: [
-      { label: "Token name", example: "Nancy Coin", validate: validateNonEmpty("Name") },
-      { label: "Token symbol", example: "NANCY", validate: validateNonEmpty("Symbol") },
+      { label: "Token name", example: "BNancy Coin", validate: validateNonEmpty("Name") },
+      { label: "Token symbol", example: "BNANCY", validate: validateNonEmpty("Symbol") },
       { label: "Metadata URI", example: "ipfs://bafy...", validate: validateNonEmpty("Metadata URI") },
       { label: "Buy tax (bps, 100 = 1%)", example: "200", validate: (v) => void parseBasisPoints(v, 5000) },
       { label: "Sell tax (bps, 100 = 1%)", example: "200", validate: (v) => void parseBasisPoints(v, 5000) },

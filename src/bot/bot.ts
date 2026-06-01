@@ -29,7 +29,7 @@ import type { ExplanationService } from "../services/explanationService.js";
 import { VoiceService, voiceSupported } from "../services/voiceService.js";
 import type { VoiceVideoService } from "../services/voiceVideoService.js";
 import type { PlatformSettingsService } from "../services/platformSettings.js";
-import { flapLaunchKeyboard, executePageKeyboard, helpText, linkPageKeyboard, mainMenuKeyboard, nancyDetailKeyboard, nancyLangKeyboard, nancyListKeyboard, safeGroupKeyboard, safeSubmissionKeyboard, tradeProposalKeyboard } from "./keyboards.js";
+import { flapLaunchKeyboard, executePageKeyboard, helpText, linkPageKeyboard, mainMenuKeyboard, bnancyDetailKeyboard, bnancyLangKeyboard, bnancyListKeyboard, safeGroupKeyboard, safeSubmissionKeyboard, tradeProposalKeyboard } from "./keyboards.js";
 import { normalizeLanguages } from "../domain/languages.js";
 import type { WatchlistEntry } from "../domain/types.js";
 import { formatWatchlist, formatWatchlistEntry } from "./watchlistView.js";
@@ -105,7 +105,7 @@ export function createBot(dependencies: BotDependencies): Bot {
     }
     await ctx.reply(
       [
-        "💛 Hey sugar — Nancy here, the Golden Girl of Binance.",
+        "💛 Hey sugar — BNancy here, the Golden Girl of Binance.",
         "",
         "I run your group's shared trading wallet: a Safe multisig the owners control. I never hold your keys.",
         "",
@@ -250,27 +250,27 @@ export function createBot(dependencies: BotDependencies): Bot {
     });
   });
 
-  bot.command("nancy", async (ctx) => {
-    await handleUserCommand(ctx, "nancy", async () => {
+  bot.command("bnancy", async (ctx) => {
+    await handleUserCommand(ctx, "bnancy", async () => {
       const chatId = requireChatId(ctx.chat?.id);
       const fromId = requireTelegramUserId(ctx.from?.id);
       const treasuryBnb = await groupTreasuryBnb(dependencies, chatId, fromId);
       const list = await dependencies.watchlistService.getList(Number(chatId), treasuryBnb);
       await ctx.reply(formatWatchlist(list, treasuryBnb ?? dependencies.config.watchlistDefaultSizeBnb), {
         parse_mode: "Markdown",
-        reply_markup: nancyListKeyboard(list)
+        reply_markup: bnancyListKeyboard(list)
       });
     });
   });
 
-  bot.command("nancy_lang", async (ctx) => {
-    await handleUserCommand(ctx, "nancy_lang", async () => {
+  bot.command("bnancy_lang", async (ctx) => {
+    await handleUserCommand(ctx, "bnancy_lang", async () => {
       const chatId = requireChatId(ctx.chat?.id);
       await requireGroupAdmin(ctx, chatId);
       const current = normalizeLanguages((await dependencies.repository.getGroupLanguages(chatId)) ?? []);
       await ctx.reply(
-        "🌐 Nancy's verdict language(s). Tap to toggle — pick several for multi-language (one verdict per language).",
-        { reply_markup: nancyLangKeyboard(current) }
+        "🌐 BNancy's verdict language(s). Tap to toggle — pick several for multi-language (one verdict per language).",
+        { reply_markup: bnancyLangKeyboard(current) }
       );
     });
   });
@@ -411,7 +411,7 @@ export function createBot(dependencies: BotDependencies): Bot {
     });
   });
 
-  bot.callbackQuery("nancy_list", async (ctx) => {
+  bot.callbackQuery("bnancy_list", async (ctx) => {
     await handleCallback(ctx, async () => {
       const chatId = requireChatId(ctx.chat?.id);
       const fromId = requireTelegramUserId(ctx.from?.id);
@@ -420,12 +420,12 @@ export function createBot(dependencies: BotDependencies): Bot {
       await ctx.answerCallbackQuery();
       await ctx.editMessageText(formatWatchlist(list, treasuryBnb ?? dependencies.config.watchlistDefaultSizeBnb), {
         parse_mode: "Markdown",
-        reply_markup: nancyListKeyboard(list)
+        reply_markup: bnancyListKeyboard(list)
       });
     });
   });
 
-  bot.callbackQuery(/^nancy_detail:(.+)$/, async (ctx) => {
+  bot.callbackQuery(/^bnancy_detail:(.+)$/, async (ctx) => {
     await handleCallback(ctx, async () => {
       const chatId = requireChatId(ctx.chat?.id);
       const fromId = requireTelegramUserId(ctx.from?.id);
@@ -434,14 +434,14 @@ export function createBot(dependencies: BotDependencies): Bot {
       // (pool enrichment + eliza-1 verdict — up to ~20s, more for multi-language)
       // DETACHED, so we never blow grammy's ~10s webhook timeout.
       await ctx.answerCallbackQuery();
-      await ctx.editMessageText("💛 Nancy's reading the pool — one sec…");
+      await ctx.editMessageText("💛 BNancy's reading the pool — one sec…");
       void (async () => {
         try {
           const treasuryBnb = await groupTreasuryBnb(dependencies, chatId, fromId);
           const list = await dependencies.watchlistService.getList(Number(chatId), treasuryBnb);
           const entry = list.find((e) => e.candidate.tokenAddress.toLowerCase() === tokenAddress.toLowerCase());
           if (entry === undefined) {
-            await ctx.editMessageText("That token rolled off the list — run /nancy again.");
+            await ctx.editMessageText("That token rolled off the list — run /bnancy again.");
             return;
           }
           const languages = normalizeLanguages((await dependencies.repository.getGroupLanguages(chatId)) ?? []);
@@ -458,10 +458,10 @@ export function createBot(dependencies: BotDependencies): Bot {
           const videoAvailable = voiceAvailable && dependencies.voiceVideoService !== undefined && videoFlag;
           await ctx.editMessageText(formatWatchlistEntry(entry, explanation), {
             parse_mode: "Markdown",
-            reply_markup: nancyDetailKeyboard(entry.candidate.tokenAddress, entry.gate === "pass", voiceAvailable, videoAvailable)
+            reply_markup: bnancyDetailKeyboard(entry.candidate.tokenAddress, entry.gate === "pass", voiceAvailable, videoAvailable)
           });
         } catch (error) {
-          Logger.error("[TelegramBot] nancy_detail render failed", { err: error instanceof Error ? error : undefined });
+          Logger.error("[TelegramBot] bnancy_detail render failed", { err: error instanceof Error ? error : undefined });
           try {
             await ctx.editMessageText("Couldn't load that token right now — tap it again in a moment.");
           } catch {
@@ -472,7 +472,7 @@ export function createBot(dependencies: BotDependencies): Bot {
     });
   });
 
-  bot.callbackQuery(/^nancy_lang:(.+)$/, async (ctx) => {
+  bot.callbackQuery(/^bnancy_lang:(.+)$/, async (ctx) => {
     await handleCallback(ctx, async () => {
       const chatId = requireChatId(ctx.chat?.id);
       await requireGroupAdmin(ctx, chatId);
@@ -482,22 +482,22 @@ export function createBot(dependencies: BotDependencies): Bot {
       const normalized = normalizeLanguages(next);
       await dependencies.repository.setGroupLanguages(chatId, normalized);
       await ctx.answerCallbackQuery();
-      await ctx.editMessageReplyMarkup({ reply_markup: nancyLangKeyboard(normalized) });
+      await ctx.editMessageReplyMarkup({ reply_markup: bnancyLangKeyboard(normalized) });
     });
   });
 
-  bot.callbackQuery(/^nancy_buy:(.+)$/, async (ctx) => {
+  bot.callbackQuery(/^bnancy_buy:(.+)$/, async (ctx) => {
     await handleCallback(ctx, async () => {
       const tokenAddress = String(ctx.match[1] ?? "");
       await ctx.answerCallbackQuery();
       await ctx.reply(
-        `To trade this, a trader runs:\n\`/buy ${tokenAddress} <bnbAmount>\`\n\nNancy re-checks risk, builds the Safe transaction, and the owners sign — she never moves funds herself.`,
+        `To trade this, a trader runs:\n\`/buy ${tokenAddress} <bnbAmount>\`\n\nBNancy re-checks risk, builds the Safe transaction, and the owners sign — she never moves funds herself.`,
         { parse_mode: "Markdown" }
       );
     });
   });
 
-  bot.callbackQuery(/^nancy_voice:(.+)$/, async (ctx) => {
+  bot.callbackQuery(/^bnancy_voice:(.+)$/, async (ctx) => {
     await handleCallback(ctx, async () => {
       const chatId = requireChatId(ctx.chat?.id);
       const fromId = requireTelegramUserId(ctx.from?.id);
@@ -506,23 +506,23 @@ export function createBot(dependencies: BotDependencies): Bot {
         await ctx.answerCallbackQuery({ text: "Voice isn't enabled.", show_alert: true });
         return;
       }
-      await ctx.answerCallbackQuery({ text: "🔊 Recording Nancy's take…" });
+      await ctx.answerCallbackQuery({ text: "🔊 Recording BNancy's take…" });
       void (async () => {
         try {
-          const take = await nancySpokenTake(dependencies, chatId, fromId, tokenAddress);
+          const take = await bnancySpokenTake(dependencies, chatId, fromId, tokenAddress);
           if (!take.ok) {
             if (take.reason === "synth") await ctx.reply("Couldn't record that one — try again in a moment.");
             return;
           }
           const { entry, voiceLang, primary } = take;
           const symbol = entry.candidate.tokenSymbol;
-          await ctx.replyWithVoice(new InputFile(take.audio, "nancy.ogg"), {
+          await ctx.replyWithVoice(new InputFile(take.audio, "bnancy.ogg"), {
             caption:
               voiceLang === primary
-                ? `🔊 Nancy on ${symbol}`
-                : `🔊 Nancy on ${symbol} (English voice — no ${primary} voice yet)`,
+                ? `🔊 BNancy on ${symbol}`
+                : `🔊 BNancy on ${symbol} (English voice — no ${primary} voice yet)`,
             // Re-open the options under the voice note so the user can act once she's done speaking.
-            reply_markup: nancyDetailKeyboard(
+            reply_markup: bnancyDetailKeyboard(
               entry.candidate.tokenAddress,
               entry.gate === "pass",
               true,
@@ -530,13 +530,13 @@ export function createBot(dependencies: BotDependencies): Bot {
             )
           });
         } catch (error) {
-          Logger.error("[TelegramBot] nancy_voice failed", { err: error instanceof Error ? error : undefined });
+          Logger.error("[TelegramBot] bnancy_voice failed", { err: error instanceof Error ? error : undefined });
         }
       })();
     });
   });
 
-  bot.callbackQuery(/^nancy_video:(.+)$/, async (ctx) => {
+  bot.callbackQuery(/^bnancy_video:(.+)$/, async (ctx) => {
     await handleCallback(ctx, async () => {
       const chatId = requireChatId(ctx.chat?.id);
       const fromId = requireTelegramUserId(ctx.from?.id);
@@ -549,10 +549,10 @@ export function createBot(dependencies: BotDependencies): Bot {
         await ctx.answerCallbackQuery({ text: "Video isn't enabled.", show_alert: true });
         return;
       }
-      await ctx.answerCallbackQuery({ text: "🎬 Filming Nancy's take…" });
+      await ctx.answerCallbackQuery({ text: "🎬 Filming BNancy's take…" });
       void (async () => {
         try {
-          const take = await nancySpokenTake(dependencies, chatId, fromId, tokenAddress);
+          const take = await bnancySpokenTake(dependencies, chatId, fromId, tokenAddress);
           if (!take.ok) {
             if (take.reason === "synth") await ctx.reply("Couldn't film that one — try again in a moment.");
             return;
@@ -564,15 +564,15 @@ export function createBot(dependencies: BotDependencies): Bot {
           }
           const { entry, voiceLang, primary } = take;
           const symbol = entry.candidate.tokenSymbol;
-          await ctx.replyWithVideo(new InputFile(video, "nancy.mp4"), {
+          await ctx.replyWithVideo(new InputFile(video, "bnancy.mp4"), {
             caption:
               voiceLang === primary
-                ? `🎬 Nancy on ${symbol}`
-                : `🎬 Nancy on ${symbol} (English voice — no ${primary} voice yet)`,
-            reply_markup: nancyDetailKeyboard(entry.candidate.tokenAddress, entry.gate === "pass", true, true)
+                ? `🎬 BNancy on ${symbol}`
+                : `🎬 BNancy on ${symbol} (English voice — no ${primary} voice yet)`,
+            reply_markup: bnancyDetailKeyboard(entry.candidate.tokenAddress, entry.gate === "pass", true, true)
           });
         } catch (error) {
-          Logger.error("[TelegramBot] nancy_video failed", { err: error instanceof Error ? error : undefined });
+          Logger.error("[TelegramBot] bnancy_video failed", { err: error instanceof Error ? error : undefined });
         }
       })();
     });
@@ -636,12 +636,12 @@ type SpokenTake =
   | { ok: false; reason: "gone" | "synth" };
 
 // Shared by the "🔊 Hear it" and "🎬 Watch it" buttons: resolve the watchlist
-// entry, render Nancy's take in the group's language, and synthesize it to audio.
+// entry, render BNancy's take in the group's language, and synthesize it to audio.
 // Kokoro can't speak every language, so an unsupported primary falls back to an
 // English voice (the written take stays in the group's language). Returns "gone"
 // if the token rolled off the list (callers stay silent) or "synth" if voice
 // failed (callers tell the user to retry).
-async function nancySpokenTake(
+async function bnancySpokenTake(
   deps: BotDependencies,
   chatId: string,
   fromId: string,

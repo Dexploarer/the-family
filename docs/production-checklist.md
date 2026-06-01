@@ -29,7 +29,7 @@ SAFE_TRANSACTION_SERVICE_URL=https://api.safe.global/tx-service/bnb
 WALLETCONNECT_PROJECT_ID=<WalletConnect cloud project id>
 ```
 
-Nancy is non-custodial: it never stores private keys. Safe deploy and execute are sent from owner wallets via `/deploy/<sessionId>` and `/execute/<safeSubmissionId>`. `/wallet_generate` (DM only) creates a keypair, shows the private key once, and stores only the public key.
+BNancy is non-custodial: it never stores private keys. Safe deploy and execute are sent from owner wallets via `/deploy/<sessionId>` and `/execute/<safeSubmissionId>`. `/wallet_generate` (DM only) creates a keypair, shows the private key once, and stores only the public key.
 
 ## Launch steps
 

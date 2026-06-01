@@ -23,7 +23,7 @@ Covered:
 - Pool accounting math, deposit share minting, queued withdrawals, fee math, NAV snapshots, role gating, and open-position liquidity blocking.
 - Verified deposit edge cases through injected RPC responses.
 - Safe withdrawal preparation and execution marking through pool accounting.
-- Telegram command metadata, Nancy bot identity limits, and duplicate command guards.
+- Telegram command metadata, BNancy bot identity limits, and duplicate command guards.
 - Telegram init data HMAC verification.
 - Signing page, one-click wallet-link page, and pool Mini App rendering.
 - HTTP route handler integration (`tests/httpServer.test.ts`): `/health`, 404s, link page render, the wallet-link signature endpoint completing a link end-to-end with a real signature (and rejecting a wrong-key signature), pool analytics JSON, and a Safe submission proposed through the signature endpoint.
@@ -53,7 +53,7 @@ bun run smoke:live
 
 Covered:
 
-- Telegram Bot API readback for Nancy name, descriptions, command names, and command descriptions.
+- Telegram Bot API readback for BNancy name, descriptions, command names, and command descriptions.
 - BSC RPC chain ID and latest block.
 - Contract bytecode checks for Safe, Flap, Split Vault, PancakeSwap, and WBNB where configured.
 - Safe Transaction Service `/about`.

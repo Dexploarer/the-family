@@ -277,7 +277,7 @@ describe("HTTP fetch handler", () => {
     );
     expect(setPassword.status).toBe(200);
     const cookie = setPassword.headers.get("set-cookie");
-    expect(cookie).toContain("nancy_admin_session=");
+    expect(cookie).toContain("bnancy_admin_session=");
 
     const overview = await handler(
       new Request("http://test/api/admin/overview", {

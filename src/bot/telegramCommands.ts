@@ -1,14 +1,14 @@
 import type { Bot } from "grammy";
 import { Logger } from "../logger.js";
 
-export const BOT_NAME = "Nancy, the Golden Girl of Binance";
+export const BOT_NAME = "BNancy, the Golden Girl of Binance";
 
 export const BOT_SHORT_DESCRIPTION = "BSC Safe group trading, pool accounting, and Flap launches for Telegram groups.";
 
 export const BOT_DESCRIPTION = [
-  "Nancy, the Golden Girl of Binance, helps Telegram groups run BSC Safe trading pools.",
+  "BNancy, the Golden Girl of Binance, helps Telegram groups run BSC Safe trading pools.",
   "Create or link a group Safe, assign owners/traders/members, verify deposits, track shares and PnL, prepare token buys, launch through Flap, and approve Safe transactions.",
-  "Nancy is infrastructure only. No profit, token, or execution guarantees."
+  "BNancy is infrastructure only. No profit, token, or execution guarantees."
 ].join("\n");
 
 export const BOT_COMMANDS = [
@@ -30,6 +30,7 @@ export const BOT_COMMANDS = [
   { command: "pool_withdraw", description: "Request a pool withdrawal" },
   { command: "pool_cancel", description: "Cancel a queued pool withdrawal" },
   { command: "portfolio", description: "Your position across all your groups" },
+  { command: "bnancy", description: "Check elizaOK trends through BNancy's exit-safety lens" },
   { command: "buy", description: "Create a BSC token buy proposal" },
   { command: "proposal", description: "Show a trade proposal" },
   { command: "flap_metadata", description: "Upload optional Flap metadata" },

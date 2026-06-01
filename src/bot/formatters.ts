@@ -24,7 +24,7 @@ export function formatGeneratedWallet(generated: GeneratedWallet): string {
   return [
     "New non-custodial wallet",
     `Address: ${generated.link.address}`,
-    "Nancy does NOT store this key. Save it now — it will not be shown again.",
+    "BNancy does NOT store this key. Save it now — it will not be shown again.",
     "Import it into your own wallet (MetaMask/Rabby/etc.) to sign.",
     generated.privateKey
   ].join("\n");

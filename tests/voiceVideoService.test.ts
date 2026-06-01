@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto";
 import { buildFfmpegArgs, VoiceVideoService } from "../src/services/voiceVideoService.js";
 
 const hasTools = Bun.which("ffmpeg") !== null && Bun.which("ffprobe") !== null;
-const avatarPath = fileURLToPath(new URL("../assets/nancy.png", import.meta.url));
+const avatarPath = fileURLToPath(new URL("../assets/bnancy.png", import.meta.url));
 
 async function makeOpusOgg(durationSec: number): Promise<Buffer> {
   const out = join(tmpdir(), `vv-test-${randomUUID()}.ogg`);
@@ -48,7 +48,7 @@ async function ffprobe(buf: Buffer): Promise<{ codecs: string[]; duration: numbe
 
 describe("voiceVideoService buildFfmpegArgs", () => {
   const args = buildFfmpegArgs({
-    avatarPath: "/assets/nancy.png",
+    avatarPath: "/assets/bnancy.png",
     audioPath: "/tmp/in.ogg",
     outPath: "/tmp/out.mp4"
   });
@@ -59,7 +59,7 @@ describe("voiceVideoService buildFfmpegArgs", () => {
     expect(args[loopIdx + 1]).toBe("1");
     // first -i is the looped avatar
     const firstI = args.indexOf("-i");
-    expect(args[firstI + 1]).toBe("/assets/nancy.png");
+    expect(args[firstI + 1]).toBe("/assets/bnancy.png");
     // second -i is the audio
     const secondI = args.indexOf("-i", firstI + 1);
     expect(args[secondI + 1]).toBe("/tmp/in.ogg");

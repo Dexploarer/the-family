@@ -137,7 +137,7 @@ export function buildApp(config: AppConfig): App {
   const voiceVideoService =
     voiceService === undefined
       ? undefined
-      : new VoiceVideoService({ avatarPath: fileURLToPath(new URL("../assets/nancy.png", import.meta.url)) });
+      : new VoiceVideoService({ avatarPath: fileURLToPath(new URL("../assets/bnancy.png", import.meta.url)) });
   const flapLaunchService = new FlapLaunchService(repository, flapService);
   const flapMetadataService = new FlapMetadataService(config.pinataJwt);
   const safeSubmissionService = new SafeSubmissionService(

@@ -10,7 +10,7 @@ export type VideoFeatureState = {
 
 const SETTING_KEY = "video_enabled";
 
-// Nancy video notes (avatar + waveform MP4) are gated separately from voice/TTS.
+// BNancy video notes (avatar + waveform MP4) are gated separately from voice/TTS.
 // Env sets the boot default; platform admins or the ops HTTP API can override
 // at runtime without redeploying (stored in platform_settings).
 export class VideoFeatureService {

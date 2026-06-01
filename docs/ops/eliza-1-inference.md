@@ -9,11 +9,11 @@ LICENSE file — non-team deployers should confirm terms before relying on it.)
 **Current deployment (2026-05-30):**
 - **Tier: eliza-1 2B** text GGUF (`bundles/2b/text/eliza-1-2b-128k.gguf`, ~1.27 GB). Chosen over 4B because on a CPU box the 2B renders a verdict in ~5 s, while 4B (~15–20 s) loses the explanation client's timeout race.
 - **Droplet `eliza-model`** (`s-4vcpu-8gb-intel`, region `sfo3`), Docker + `ghcr.io/ggml-org/llama.cpp:server`.
-- Exposed at **`https://model.bnbnancy.fun/v1/chat/completions`** — Caddy auto-TLS, API-key protected.
+- Exposed at **`https://model.bnancy.fun/v1/chat/completions`** — Caddy auto-TLS, API-key protected.
 - App Platform envs set: `ELIZA_MODEL_URL`, `ELIZA_MODEL_NAME=eliza-1`, `ELIZA_MODEL_API_KEY` (SECRET).
 - **Required request flag:** eliza-1 is a Qwen3 *reasoning* model — the client sends `chat_template_kwargs: { enable_thinking: false }`, otherwise it spends all tokens in `reasoning_content` and returns empty `content`. The client also strips any residual `<think>…</think>`.
 
-If the model endpoint is unreachable, `/nancy` automatically falls back to the deterministic
+If the model endpoint is unreachable, `/bnancy` automatically falls back to the deterministic
 templated explanation. The score and pass/warn/block gate are deterministic regardless of the model.
 
 ---
@@ -23,13 +23,13 @@ templated explanation. The score and pass/warn/block gate are deterministic rega
 This runbook describes how to optionally provision a CPU droplet on DigitalOcean and run a
 [llama.cpp](https://github.com/ggml-org/llama.cpp) OpenAI-compatible inference server for the
 eliza-1 text model (the live deployment uses the **2B** tier — see Status above). This server is
-consumed by the `/nancy` command's `explanationService` when `ELIZA_MODEL_URL` is set on the App
+consumed by the `/bnancy` command's `explanationService` when `ELIZA_MODEL_URL` is set on the App
 Platform app.
 
-The Nancy bot itself runs on a **DigitalOcean App Platform `basic-xxs` instance**. The model
+The BNancy bot itself runs on a **DigitalOcean App Platform `basic-xxs` instance**. The model
 runs on a **separate CPU droplet**; the App Platform app calls it over HTTPS.
 
-Because `/nancy` verdict text is generated lazily (on detail-open, per token), CPU-level latency
+Because `/bnancy` verdict text is generated lazily (on detail-open, per token), CPU-level latency
 (~2–5 s for a short paragraph) is acceptable.
 
 ---
@@ -151,7 +151,7 @@ In the **App Platform dashboard** (do NOT commit these to `.do/app.yaml` or any 
 | `ELIZA_MODEL_NAME`   | `eliza-1`                                          | Plain  |
 | `ELIZA_MODEL_API_KEY`| `<the ELIZA_KEY from Step 4>`                      | Secret |
 
-After saving, the App Platform app will restart and `/nancy` will use the live model.
+After saving, the App Platform app will restart and `/bnancy` will use the live model.
 
 ---
 
@@ -165,7 +165,7 @@ curl -s https://eliza.yourdomain.com/v1/chat/completions \
   -d '{"model":"eliza-1","messages":[{"role":"user","content":"Hello"}],"max_tokens":32}'
 ```
 
-Then run `/nancy` in a Telegram group linked to the bot and tap a detail row — the verdict text
+Then run `/bnancy` in a Telegram group linked to the bot and tap a detail row — the verdict text
 should appear within a few seconds.
 
 ---

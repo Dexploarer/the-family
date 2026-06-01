@@ -10,7 +10,7 @@ export const COMMAND_USAGE: Record<string, CommandUsage> = {
     summary: "Start linking an external owner wallet to your Telegram account.",
     usage: "/link_start <ownerAddress>",
     example: "/link_start 0x1111111111111111111111111111111111111111",
-    next: "Nancy replies with a message to sign. Sign it with that wallet, then run /link_submit."
+    next: "BNancy replies with a message to sign. Sign it with that wallet, then run /link_submit."
   },
   link_submit: {
     summary: "Finish linking a wallet by submitting the signature from /link_start.",
@@ -57,13 +57,13 @@ export const COMMAND_USAGE: Record<string, CommandUsage> = {
   flap_metadata: {
     summary: "Upload Flap token metadata to IPFS and get back a metadata URI (admin only).",
     usage: "/flap_metadata <name>|<symbol>|<description>|<imageUri>|[website]|[telegram]|[x]",
-    example: "/flap_metadata Nancy Coin|NANCY|Group token|ipfs://bafy-image...",
+    example: "/flap_metadata BNancy Coin|BNANCY|Group token|ipfs://bafy-image...",
     next: "Separate fields with | . Already have a metadata URI? Skip this and pass it straight to /flap_launch."
   },
   flap_launch: {
     summary: "Create a Flap token launch proposal (admin only).",
     usage: "/flap_launch <name>|<symbol>|<metadataUri>|<buyTaxBps>|<sellTaxBps>|<taxDays>|<recipient:bps,...>|<initialBuyBnb>",
-    example: "/flap_launch Nancy Coin|NANCY|ipfs://bafy...|200|200|30|0xRecipient...:10000|0.1",
+    example: "/flap_launch BNancy Coin|BNANCY|ipfs://bafy...|200|200|30|0xRecipient...:10000|0.1",
     next: "All 8 fields are required, separated by | . Recipient shares must sum to 10000 bps. Get a metadata URI from /flap_metadata."
   },
   safe_prepare: {

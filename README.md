@@ -1,12 +1,12 @@
-# NANCY
+# BNANCY
 
 <p align="center">
-  <img src="assets/nancy.png" alt="Nancy, the Golden Girl of Binance" width="320" />
+  <img src="assets/bnancy.png" alt="BNancy, the Golden Girl of Binance" width="320" />
 </p>
 
-Nancy, the Golden Girl of Binance — a production Telegram bot for BSC group trading wallets and Flap token launches.
+BNancy, the Golden Girl of Binance — a production Telegram bot for BSC group trading wallets and Flap token launches.
 
-**New here?** Group admins and members should start with the **[Nancy Guide](docs/guide.md)** — a step-by-step walkthrough from creating a group Safe to depositing, trading, and withdrawing.
+**New here?** Group admins and members should start with the **[BNancy Guide](docs/guide.md)** — a step-by-step walkthrough from creating a group Safe to depositing, trading, and withdrawing.
 
 ## Capabilities
 
@@ -26,7 +26,7 @@ Nancy, the Golden Girl of Binance — a production Telegram bot for BSC group tr
 - Route Flap launch commission to the configured platform wallet through Flap's existing `commissionReceiver`.
 - Prepare Safe transactions, collect owner signatures, and submit proposals/confirmations to Safe Transaction Service.
 
-Nancy does not deploy a custom vault contract. Custody remains in the group Safe; the bot stores the accounting ledger and prepares Safe transactions.
+BNancy does not deploy a custom vault contract. Custody remains in the group Safe; the bot stores the accounting ledger and prepares Safe transactions.
 
 ## Setup
 
@@ -74,10 +74,10 @@ See [docs/qa-test-matrix.md](docs/qa-test-matrix.md) for automated, live-smoke, 
 /safe_prepare withdrawal <withdrawalRequestId>
 /safe_status <safeSubmissionId>
 /safe_execute <safeSubmissionId>
-/nancy
+/bnancy
 ```
 
-`/nancy` — exit-safety reality check on elizaOK's trending list — due diligence, not buy calls.
+`/bnancy` — exit-safety reality check on elizaOK's trending list — due diligence, not buy calls.
 
 Example:
 
@@ -118,9 +118,9 @@ Pinata is only needed for `/flap_metadata`, which uploads token metadata JSON an
 
 ## Safe creation flow
 
-`/wallet_generate` (DM only) creates a non-custodial owner wallet, links its public key to the Telegram user, and shows the private key once. Nancy never stores the private key. Users can also link an external wallet with `/link_start` and `/link_submit`.
+`/wallet_generate` (DM only) creates a non-custodial owner wallet, links its public key to the Telegram user, and shows the private key once. BNancy never stores the private key. Users can also link an external wallet with `/link_start` and `/link_submit`.
 
-`/safe_group <threshold>` starts a group-member collection flow with inline buttons. Each owner taps `Generate wallet + join` to create a non-custodial wallet (private key sent by DM) or `Join linked wallet` for a wallet they already linked. When enough owners have joined, a group admin taps `Deploy Safe` and sends `createProxyWithNonce` from their own wallet (they pay gas; Nancy holds no deploy key).
+`/safe_group <threshold>` starts a group-member collection flow with inline buttons. Each owner taps `Generate wallet + join` to create a non-custodial wallet (private key sent by DM) or `Join linked wallet` for a wallet they already linked. When enough owners have joined, a group admin taps `Deploy Safe` and sends `createProxyWithNonce` from their own wallet (they pay gas; BNancy holds no deploy key).
 
 `/safe_create` is deprecated. Use `/safe_group` for wallet-based deployment, or `/wallet_set <safeAddress> <threshold> <owner1> [owner2 ...]` if you already have a Safe.
 
@@ -141,6 +141,6 @@ If you already have a Safe, use `/wallet_set <safeAddress> <threshold> <owner1> 
 - Flap tokens in the bonding-curve phase route through Flap `Portal`.
 - Flap tokens already migrated to DEX and regular BSC tokens route through PancakeSwap V2.
 - Safe Transaction Service submission requires a real Safe owner signature. The bot validates that the signature recovers to a configured owner before submitting it.
-- Nancy is non-custodial and never stores private keys. `/wallet_generate` shows a freshly generated key once by DM; the user imports it into their own wallet to sign.
-- Safe deploy and execute are **owner-wallet only**: an admin deploys from `/deploy/<sessionId>`, and any owner executes from `/execute/<safeSubmissionId>`. Nancy never holds a gas key.
+- BNancy is non-custodial and never stores private keys. `/wallet_generate` shows a freshly generated key once by DM; the user imports it into their own wallet to sign.
+- Safe deploy and execute are **owner-wallet only**: an admin deploys from `/deploy/<sessionId>`, and any owner executes from `/execute/<safeSubmissionId>`. BNancy never holds a gas key.
 - `STORAGE_DRIVER=memory` is for local testing. Use the schema in `db/schema.sql` before production.

@@ -120,20 +120,20 @@ export class AdminInviteService {
     try {
       const inboxId = await ensureOperatorInviteInbox(apiKey, this.config.agentMailInboxId);
       const text = [
-        `You were invited to the Nancy operator dashboard by ${inviterEmail}.`,
+        `You were invited to the BNancy operator dashboard by ${inviterEmail}.`,
         "",
         `Accept invite and set your password: ${inviteUrl}`,
         "",
         `This link expires in ${INVITE_TTL_DAYS} days.`
       ].join("\n");
       const html = [
-        `<p>You were invited to the Nancy operator dashboard by ${inviterEmail}.</p>`,
+        `<p>You were invited to the BNancy operator dashboard by ${inviterEmail}.</p>`,
         `<p><a href="${inviteUrl}">Accept invite and set your password</a></p>`,
         `<p>This link expires in ${INVITE_TTL_DAYS} days.</p>`
       ].join("");
       return await sendAgentMailMessage(apiKey, inboxId, {
         to,
-        subject: "Nancy operator dashboard invite",
+        subject: "BNancy operator dashboard invite",
         text,
         html
       });

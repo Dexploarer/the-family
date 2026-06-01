@@ -23,7 +23,7 @@ export type BrandingSnapshot = {
 export type BrandingPatch = Partial<BrandingSnapshot>;
 
 const DEFAULTS: BrandingSnapshot = {
-  productName: "Nancy",
+  productName: "BNancy",
   tagline: "the Golden Girl of Binance",
   themeColor: "#f0b90b",
   operatorTitle: "Operator Control",

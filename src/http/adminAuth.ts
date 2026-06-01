@@ -3,7 +3,7 @@ import type { App } from "../app.js";
 import type { AppConfig } from "../config.js";
 import type { AdminRole, AdminUser } from "../domain/types.js";
 
-export const ADMIN_SESSION_COOKIE = "nancy_admin_session";
+export const ADMIN_SESSION_COOKIE = "bnancy_admin_session";
 
 export type AdminPrincipal =
   | { kind: "legacy"; role: "super_admin" }

@@ -50,14 +50,14 @@ export class PlatformSettingsService {
       {
         key: PLATFORM_FLAG_KEYS.video,
         label: "Video notes",
-        description: "Nancy avatar + waveform MP4 on /nancy token detail (requires Kokoro TTS + ffmpeg).",
+        description: "BNancy avatar + waveform MP4 on /bnancy token detail (requires Kokoro TTS + ffmpeg).",
         envDefault: this.config.videoEnabledDefault,
         runtimeConfigured: this.config.kokoroTtsUrl !== undefined
       },
       {
         key: PLATFORM_FLAG_KEYS.voice,
         label: "Voice notes",
-        description: "Telegram voice verdicts on /nancy token detail (requires Kokoro TTS URL).",
+        description: "Telegram voice verdicts on /bnancy token detail (requires Kokoro TTS URL).",
         envDefault: this.config.voiceEnabledDefault,
         runtimeConfigured: this.config.kokoroTtsUrl !== undefined
       }

@@ -3,7 +3,7 @@ name: publish
 # Build linux/amd64 and push to GitHub Container Registry for ElizaCloud (and any
 # other host). Does not touch DigitalOcean — see deploy.yml for the DO path.
 #
-# Image: ghcr.io/dexploarer/nancy:latest (+ :<git-sha>)
+# Image: ghcr.io/dexploarer/bnancy:latest (+ :<git-sha>)
 # After the first push, set the package visibility to Public in GitHub
 # (Package settings → Change visibility) so ElizaCloud can pull without credentials.
 on:
@@ -44,7 +44,7 @@ jobs:
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ghcr.io/${{ github.repository_owner }}/nancy
+          images: ghcr.io/${{ github.repository_owner }}/bnancy
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=

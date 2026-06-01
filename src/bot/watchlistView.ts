@@ -10,7 +10,7 @@ function stripMarkdown(s: string): string {
 
 export function formatWatchlist(entries: WatchlistEntry[], treasurySizeBnb: number): string {
   const lines = [
-    "💛 *Nancy's watch* — elizaOK finds them, I check if your group can get *out*.",
+    "💛 *BNancy's watch* — elizaOK finds them, I check if your group can get *out*.",
     `_Exit-safety at ${treasurySizeBnb} BNB · verdicts ran by eliza-1 · Not financial advice._`,
     ""
   ];
@@ -39,6 +39,6 @@ export function formatWatchlistEntry(entry: WatchlistEntry, explanation: string)
     `Token: \`${entry.candidate.tokenAddress}\``
   ];
   if (entry.reasons.length > 0) lines.push("", "Flags: " + entry.reasons.join("; "));
-  if (entry.gate !== "pass") lines.push("", "_Nancy would not enter this at your size._");
+  if (entry.gate !== "pass") lines.push("", "_BNancy would not enter this at your size._");
   return lines.join("\n");
 }

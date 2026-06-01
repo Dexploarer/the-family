@@ -14,7 +14,7 @@ export function renderLinkPage(link: WalletLink, walletConnectProjectId?: string
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   ${brandHead()}
-  <title>Nancy Wallet Link</title>
+  <title>BNancy Wallet Link</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #101318; color: #f7f3e8; }
@@ -32,7 +32,7 @@ export function renderLinkPage(link: WalletLink, walletConnectProjectId?: string
   <main>
     <h1>Link your wallet</h1>
     <p>Wallet to link: <code id="address">${link.address}</code></p>
-    <p>Connect this exact wallet and sign to prove you control it. Nancy never sees your private key.</p>
+    <p>Connect this exact wallet and sign to prove you control it. BNancy never sees your private key.</p>
     <button id="link" ${alreadyLinked ? "disabled" : ""}>Connect wallet and sign</button>
     <output id="output">${alreadyLinked ? "This wallet is already linked." : "Waiting for signature."}</output>
   </main>
@@ -93,7 +93,7 @@ export function renderLinkStartPage(walletConnectProjectId?: string, chainId?: n
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   ${brandHead()}
-  <title>Nancy Wallet Link</title>
+  <title>BNancy Wallet Link</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #101318; color: #f7f3e8; }
@@ -109,7 +109,7 @@ export function renderLinkStartPage(walletConnectProjectId?: string, chainId?: n
 <body>
   <main>
     <h1>Link your wallet</h1>
-    <p>Connect your wallet and sign once to prove you control it. Nancy never sees your private key.</p>
+    <p>Connect your wallet and sign once to prove you control it. BNancy never sees your private key.</p>
     <button id="link">Connect wallet and link</button>
     <output id="output">Waiting for your wallet.</output>
   </main>
