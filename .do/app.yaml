@@ -1,25 +1,21 @@
-# DigitalOcean App Platform spec for Nancy.
-# Deploy with: doctl apps create --spec .do/app.yaml  (after connecting GitHub to DO).
-# Builds from the Dockerfile and runs ONE long-running instance (HTTP server +
-# deposit watcher + webhook). Do NOT raise instance_count — the in-process pool
-# mutex serializes money mutations in a single process.
+# DigitalOcean App Platform — deploy from GHCR (digest set by deploy workflow).
+# Image: ghcr.io/dexploarer/nancy  (see .github/workflows/deploy.yml + publish.yml)
 name: nancy
 region: sfo
 services:
   - name: bot
     instance_count: 1
     instance_size_slug: basic-xxs
-    dockerfile_path: Dockerfile
-    source_dir: /
-    github:
-      repo: Dexploarer/Nancy
-      branch: main
-      deploy_on_push: true
     http_port: 8080
     health_check:
       http_path: /health
       initial_delay_seconds: 20
       period_seconds: 30
+    image:
+      registry_type: GHCR
+      registry: Dexploarer
+      repository: nancy
+      digest: ${IMAGE_DIGEST}
     envs:
       - key: HTTP_PORT
         scope: RUN_AND_BUILD_TIME
@@ -28,25 +24,10 @@ services:
         value: production
       - key: STORAGE_DRIVER
         value: postgres
-      # Auto-filled with the app's own https URL, so the bot registers its Telegram
-      # webhook against the right host and serves the link/deploy/execute/pool pages.
       - key: PUBLIC_BASE_URL
         value: ${APP_URL}
       - key: ADMIN_BOOTSTRAP_EMAIL
         value: dexploarer@gmail.com
-      # All remaining vars are set in the App Platform dashboard (bulk-paste from .env),
-      # with these marked as SECRET:
-      #   TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, DATABASE_URL, SAFE_API_KEY,
-      #   PINATA_JWT, ADMIN_SESSION_SECRET
-      # and these as plain config:
-      #   BSC_CHAIN_ID, BSC_RPC_URL, SAFE_TRANSACTION_SERVICE_URL, WALLETCONNECT_PROJECT_ID,
-      #   PLATFORM_FEE_RECIPIENT, PLATFORM_COMMISSION_RECEIVER, PLATFORM_ADMIN_IDS,
-      #   TRADE_FEE_BPS, POOL_WITHDRAWAL_FEE_BPS, DEX_DEADLINE_SECONDS, DEPOSIT_WATCH,
-      #   MAX_BUY_TAX_BPS, MAX_SELL_TAX_BPS, MIN_LIQUIDITY_USD, RISK_CHECK_MODE
-      # OPTIONAL — eliza-1 inference (self-hosted CPU droplet; bot uses templated fallback when unset):
-      #   ELIZA_MODEL_URL, ELIZA_MODEL_NAME
-      # and this as SECRET (when eliza-1 inference is enabled):
-      #   ELIZA_MODEL_API_KEY
-      # OPTIONAL — /nancy watchlist tuning (plain config; hard-coded defaults used when unset):
-      #   WATCHLIST_MAX_TOKENS, WATCHLIST_CACHE_SECONDS, WATCHLIST_DEFAULT_SIZE_BNB,
-      #   MAX_EXIT_SLIPPAGE_BPS, MIN_LP_LOCKED_PERCENT, MAX_LP_HOLDER_TOP_PERCENT
+      # Remaining vars live in the App Platform dashboard (secrets + plain config).
+      # TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, DATABASE_URL, SAFE_API_KEY,
+      # PINATA_JWT, ADMIN_SESSION_SECRET, BSC_*, PLATFORM_*, ELIZA_*, AGENTMAIL_API_KEY, etc.
