@@ -6,11 +6,14 @@ import type { Repository } from "../storage/repository.js";
 import { ensureOperatorInviteInbox, sendAgentMailMessage } from "../integrations/agentMail.js";
 import { createId } from "../utils/ids.js";
 import type { AdminPublicUser } from "./adminAccountService.js";
+import { Logger } from "../logger.js";
+
+export type AdminInviteEmailDeliveryStatus = "sent" | "agentmail_not_configured" | "agentmail_send_failed";
 
 export type AdminInviteResult = {
   user: AdminPublicUser;
   inviteUrl: string;
-  emailSent: boolean;
+  emailDeliveryStatus: AdminInviteEmailDeliveryStatus;
 };
 
 const INVITE_TTL_DAYS = 7;
@@ -66,7 +69,7 @@ export class AdminInviteService {
 
     const base = this.config.publicBaseUrl?.replace(/\/+$/, "") ?? "";
     const inviteUrl = `${base}/admin?invite=${token}`;
-    const emailSent = await this.sendInviteEmail(email, inviteUrl, createdBy.email);
+    const emailDeliveryStatus = await this.sendInviteEmail(email, inviteUrl, createdBy.email);
 
     return {
       user: {
@@ -78,7 +81,7 @@ export class AdminInviteService {
         lastLoginAt: null
       },
       inviteUrl,
-      emailSent
+      emailDeliveryStatus
     };
   }
 
@@ -112,10 +115,10 @@ export class AdminInviteService {
     return invite;
   }
 
-  private async sendInviteEmail(to: string, inviteUrl: string, inviterEmail: string): Promise<boolean> {
+  private async sendInviteEmail(to: string, inviteUrl: string, inviterEmail: string): Promise<AdminInviteEmailDeliveryStatus> {
     const apiKey = this.config.agentMailApiKey;
     if (apiKey === undefined) {
-      return false;
+      return "agentmail_not_configured";
     }
     try {
       const inboxId = await ensureOperatorInviteInbox(apiKey, this.config.agentMailInboxId);
@@ -131,14 +134,19 @@ export class AdminInviteService {
         `<p><a href="${inviteUrl}">Accept invite and set your password</a></p>`,
         `<p>This link expires in ${INVITE_TTL_DAYS} days.</p>`
       ].join("");
-      return await sendAgentMailMessage(apiKey, inboxId, {
+      await sendAgentMailMessage(apiKey, inboxId, {
         to,
         subject: "BNancy operator dashboard invite",
         text,
         html
       });
-    } catch {
-      return false;
+      return "sent";
+    } catch (error) {
+      Logger.warn("[AdminInvite] AgentMail invite delivery failed", {
+        to,
+        err: error instanceof Error ? error : undefined
+      });
+      return "agentmail_send_failed";
     }
   }
 }

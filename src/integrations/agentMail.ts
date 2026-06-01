@@ -54,7 +54,7 @@ export async function sendAgentMailMessage(
   apiKey: string,
   inboxId: string,
   message: SendMessageBody
-): Promise<boolean> {
+): Promise<void> {
   const response = await fetch(
     `${API_BASE}/inboxes/${encodeURIComponent(inboxId)}/messages/send`,
     {
@@ -68,5 +68,7 @@ export async function sendAgentMailMessage(
       })
     }
   );
-  return response.ok;
+  if (!response.ok) {
+    throw new Error(`AgentMail message send failed: ${await parseError(response)}`);
+  }
 }

@@ -240,6 +240,8 @@ describe("HTTP fetch handler", () => {
     expect(response.status).toBe(200);
     expect(html).toContain("Operator Control");
     expect(html).toContain("/api/admin/overview");
+    expect(html).toContain("AgentMail is not configured");
+    expect(html).toContain("AgentMail delivery failed");
   });
 
   it("protects admin APIs when dashboard is not configured", async () => {

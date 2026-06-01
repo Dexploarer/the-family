@@ -501,6 +501,19 @@ export function renderAdminPage(branding: BrandingSnapshot): string {
       alert("Branding saved. Refresh the landing page to preview.");
     });
 
+    function inviteDeliveryMessage(status) {
+      if (status === "sent") {
+        return "<p>Invite email sent via AgentMail.</p>";
+      }
+      if (status === "agentmail_not_configured") {
+        return "<p>AgentMail is not configured. Copy this link for your teammate now, or set <code>AGENTMAIL_API_KEY</code> to email invites automatically.</p>";
+      }
+      if (status === "agentmail_send_failed") {
+        return "<p>Invite link created, but AgentMail delivery failed. Copy this link now, then check <code>AGENTMAIL_API_KEY</code>, <code>AGENTMAIL_INBOX_ID</code>, and AgentMail status before creating another invite.</p>";
+      }
+      return "<p>Invite link created, but delivery status was not returned. Copy this link and check server logs before assuming email delivery.</p>";
+    }
+
     document.getElementById("inviteBtn").addEventListener("click", async () => {
       const result = await api("/api/admin/users", {
         method: "POST",
@@ -511,7 +524,7 @@ export function renderAdminPage(branding: BrandingSnapshot): string {
       });
       const box = document.getElementById("inviteResult");
       box.classList.remove("hidden");
-      box.innerHTML = (result.emailSent ? "<p>Invite email sent via AgentMail.</p>" : "<p>Copy this link for your teammate (set <code>AGENTMAIL_API_KEY</code> to email automatically):</p>") +
+      box.innerHTML = inviteDeliveryMessage(result.emailDeliveryStatus) +
         '<p><a href="' + esc(result.inviteUrl) + '">' + esc(result.inviteUrl) + '</a></p>';
       document.getElementById("inviteEmail").value = "";
       await loadTeam();
