@@ -4,11 +4,16 @@
 !.env.example
 .git
 .gitignore
+.github
 node_modules
 dist
 *.log
 .DS_Store
 .superstack
 .claude
+.remember
+graphify-out
 docs
 README.md
+tests
+.mcp.json

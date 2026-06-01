@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { Pool } from "pg";
 import { Logger } from "../logger.js";
+import { buildPgPoolConfig } from "../storage/pgPoolConfig.js";
 
 const databaseUrl = process.env["DATABASE_URL"];
 if (databaseUrl === undefined || databaseUrl.length === 0) {
@@ -8,7 +9,7 @@ if (databaseUrl === undefined || databaseUrl.length === 0) {
 }
 
 const schema = await readFile(new URL("../../db/schema.sql", import.meta.url), "utf8");
-const pool = new Pool({ connectionString: databaseUrl });
+const pool = new Pool(buildPgPoolConfig(databaseUrl));
 
 try {
   await pool.query(schema);

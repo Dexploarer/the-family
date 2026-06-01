@@ -159,7 +159,11 @@ async function withSecurityHeaders(result: Response | Promise<Response>): Promis
   return response;
 }
 
-export async function startHttpRuntime(appState: App, config: AppConfig): Promise<void> {
+export type HttpRuntime = {
+  stop: () => Promise<void>;
+};
+
+export async function startHttpRuntime(appState: App, config: AppConfig): Promise<HttpRuntime> {
   // Fill the absolute og:image URL for social-share tags (no-op if no public URL).
   setOgBaseUrl(config.publicBaseUrl);
   await configureTelegramBot(appState.bot);
@@ -179,7 +183,7 @@ export async function startHttpRuntime(appState: App, config: AppConfig): Promis
     }
   }
 
-  Bun.serve({
+  const server = Bun.serve({
     port: config.httpPort,
     fetch: createFetchHandler(appState, config)
   });
@@ -197,12 +201,23 @@ export async function startHttpRuntime(appState: App, config: AppConfig): Promis
     // would crash startup → the deploy never gets healthy → the host never resolves.
     // That deadlock is exactly what bricked the first DigitalOcean deploys.
     void registerWebhookWithRetry(appState.bot, webhookUrl);
-    return;
+  } else {
+    await appState.bot.api.deleteWebhook();
+    Logger.info("[HttpRuntime] Telegram webhook cleared for local polling");
+    void appState.bot.start();
   }
 
-  await appState.bot.api.deleteWebhook();
-  Logger.info("[HttpRuntime] Telegram webhook cleared for local polling");
-  await appState.bot.start();
+  return {
+    stop: async () => {
+      Logger.info("[HttpRuntime] Shutting down");
+      if (config.depositWatchEnabled) {
+        appState.depositWatcher.stop();
+      }
+      server.stop(true);
+      await appState.bot.stop();
+      Logger.info("[HttpRuntime] Shutdown complete");
+    }
+  };
 }
 
 // Register the Telegram webhook with backoff. A fresh PaaS host often isn't
