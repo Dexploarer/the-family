@@ -111,7 +111,7 @@ Target an existing dashboard agent:
 ELIZACLOUD_AGENT_ID=e597a229-... ELIZACLOUD_API_KEY=eliza_... bun run deploy:elizacloud
 ```
 
-The script creates an agent named `bnancy` (or reuses by name/id), enqueues **provision**, polls until `status=running`, and verifies `https://<id>.elizacloud.ai/health`.
+The script creates an agent named `bnancy` (or reuses by name/id), enqueues **provision**, polls until `status=running`, and verifies `https://<id>.elizacloud.ai/health`, the landing page, `/admin`, `/pool/live-smoke`, and `/og-image.png`.
 
 **Env updates:** the public API only accepts `environmentVars` on **create**. To rotate secrets on an existing agent, use the ElizaCloud dashboard or delete the agent and re-run the script.
 
@@ -122,7 +122,8 @@ The script creates an agent named `bnancy` (or reuses by name/id), enqueues **pr
 1. `GET https://<agent-id>.elizacloud.ai/health` → `{"ok":true}`.
 2. BotFather: `/setprivacy` → **Disable** (bot must see plain-text replies).
 3. Logs should show: `[HttpRuntime] Telegram webhook configured`.
-4. Smoke: DM `/start`, link wallet, create a test group Safe.
+4. `bun run smoke:live` should confirm the default Telegram menu button opens the Mini App URL.
+5. Smoke: DM `/start`, link wallet, create a test group Safe.
 
 ## Local smoke (before ElizaCloud)
 

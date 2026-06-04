@@ -3,6 +3,7 @@ import { parseEther, type Address } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { buildApp, type App } from "../src/app.js";
 import type { AppConfig } from "../src/config.js";
+import { setOgBaseUrl } from "../src/http/brand.js";
 import { createFetchHandler } from "../src/http/server.js";
 import { buildWalletLinkMessage, WalletLinkService } from "../src/services/walletLinkService.js";
 import { SafeSubmissionService } from "../src/services/safeSubmissionService.js";
@@ -10,6 +11,7 @@ import { PoolService } from "../src/services/poolService.js";
 import { MemoryRepository } from "../src/storage/memoryRepository.js";
 import { MemoryPoolRepository } from "../src/storage/memoryPoolRepository.js";
 import { SimulatedSafeService } from "../src/qa/fullSimulationFakes.js";
+import { checkPublicWebSurfaces } from "../src/qa/publicSurfaceChecks.js";
 
 const ownerKey = "0x59c6995e998f97a5a004497e5da5cf9e7ae6b36f10a0edbb1d5828dce3f2b0b5";
 
@@ -242,6 +244,25 @@ describe("HTTP fetch handler", () => {
     expect(html).toContain("/api/admin/overview");
     expect(html).toContain("AgentMail is not configured");
     expect(html).toContain("AgentMail delivery failed");
+  });
+
+  it("passes the public surface checks used by live smoke and deploy", async () => {
+    const config = testConfig();
+    const server = Bun.serve({ port: 0, fetch: createFetchHandler(buildApp(config), config) });
+    const baseUrl = `http://localhost:${server.port}`;
+    setOgBaseUrl(baseUrl);
+    try {
+      const checks = await checkPublicWebSurfaces(baseUrl);
+      expect(checks.map((check) => check.name)).toEqual([
+        "Landing page",
+        "Operator dashboard",
+        "Pool Mini App page",
+        "Brand image"
+      ]);
+    } finally {
+      setOgBaseUrl(undefined);
+      server.stop(true);
+    }
   });
 
   it("protects admin APIs when dashboard is not configured", async () => {

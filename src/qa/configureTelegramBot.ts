@@ -7,18 +7,23 @@ import {
   BOT_DESCRIPTION,
   BOT_NAME,
   BOT_SHORT_DESCRIPTION,
-  configureTelegramBot
+  configureTelegramBot,
+  expectedTelegramMenuButton,
+  telegramMenuButtonMatches,
+  telegramMenuButtonSummary
 } from "../bot/telegramCommands.js";
 
 const config = loadConfig();
 const bot = new Bot(config.telegramBotToken);
 
-await configureTelegramBot(bot);
+await configureTelegramBot(bot, config.publicBaseUrl);
 const me = await bot.api.getMe();
 const commands = await bot.api.getMyCommands();
 const name = await bot.api.getMyName();
 const description = await bot.api.getMyDescription();
 const shortDescription = await bot.api.getMyShortDescription();
+const menuButton = await bot.api.getChatMenuButton();
+const expectedMenuButton = expectedTelegramMenuButton(config.publicBaseUrl);
 
 if (commands.length !== BOT_COMMANDS.length) {
   throw new AppError("Telegram command count mismatch", { commandCount: commands.length, expectedCommandCount: BOT_COMMANDS.length });
@@ -39,6 +44,12 @@ if (description.description !== BOT_DESCRIPTION) {
 if (shortDescription.short_description !== BOT_SHORT_DESCRIPTION) {
   throw new AppError("Telegram bot short description mismatch");
 }
+if (!telegramMenuButtonMatches(menuButton, expectedMenuButton)) {
+  throw new AppError("Telegram menu button mismatch", {
+    actual: telegramMenuButtonSummary(menuButton),
+    expected: telegramMenuButtonSummary(expectedMenuButton)
+  });
+}
 
 Logger.info("[TelegramSetup] Bot commands configured", {
   username: me.username,
@@ -46,5 +57,6 @@ Logger.info("[TelegramSetup] Bot commands configured", {
   commandCount: commands.length,
   expectedCommandCount: BOT_COMMANDS.length,
   descriptionConfigured: description.description === BOT_DESCRIPTION,
-  shortDescriptionConfigured: shortDescription.short_description === BOT_SHORT_DESCRIPTION
+  shortDescriptionConfigured: shortDescription.short_description === BOT_SHORT_DESCRIPTION,
+  menuButton: telegramMenuButtonSummary(menuButton)
 });

@@ -1,7 +1,7 @@
 // Shared <head> branding + social-share (OpenGraph/Twitter) tags. Call
 // `${brandHead(branding)}` inside each page's <head>. The absolute og:image URL is filled
 // from the base URL set once at startup via setOgBaseUrl(), so a shared BNancy link
-// (e.g. the /pool Mini App) shows a title, description, and the BNancy banner.
+// (e.g. the /pool Mini App) shows a title, description, and the B. Nancy profile image.
 
 import type { BrandingSnapshot } from "../services/brandingService.js";
 

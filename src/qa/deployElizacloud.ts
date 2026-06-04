@@ -1,3 +1,5 @@
+import { checkPublicWebSurfaces } from "./publicSurfaceChecks.js";
+
 /**
  * Create or update BNancy on ElizaCloud **Agents** (Docker sandbox) via the public API.
  * Requires ELIZACLOUD_API_KEY (or ELIZAOS_CLOUD_API_KEY / ELIZA_CLOUD_API_KEY).
@@ -368,6 +370,11 @@ if (detailBefore.status !== "running") {
 const publicUrl = agentPublicUrl(agentId);
 console.log("Checking public health…");
 await waitForHealth(publicUrl);
+console.log("Checking public web surfaces…");
+const publicSurfaceChecks = await checkPublicWebSurfaces(publicUrl);
+for (const check of publicSurfaceChecks) {
+  console.log(`   ${check.name}: ${check.detail}`);
+}
 
 console.log("\n✅ BNancy is live on ElizaCloud Agents");
 console.log(`   URL:     ${publicUrl}`);

@@ -12,11 +12,15 @@ import {
   BOT_COMMANDS,
   BOT_DESCRIPTION,
   BOT_NAME,
-  BOT_SHORT_DESCRIPTION
+  BOT_SHORT_DESCRIPTION,
+  expectedTelegramMenuButton,
+  telegramMenuButtonMatches,
+  telegramMenuButtonSummary
 } from "../bot/telegramCommands.js";
 import { parseAddress } from "../utils/evm.js";
 import { buildPgPoolConfig } from "../storage/pgPoolConfig.js";
 import { assertHttpOk } from "./httpChecks.js";
+import { checkPublicWebSurfaces } from "./publicSurfaceChecks.js";
 
 const BSC_USDT: Address = "0x55d398326f99059fF775485246999027B3197955";
 
@@ -65,6 +69,8 @@ async function checkTelegramMetadata(input: AppConfig): Promise<void> {
   const description = await bot.api.getMyDescription();
   const shortDescription = await bot.api.getMyShortDescription();
   const commands = await bot.api.getMyCommands();
+  const menuButton = await bot.api.getChatMenuButton();
+  const expectedMenuButton = expectedTelegramMenuButton(input.publicBaseUrl);
   if (name.name !== BOT_NAME) {
     throw new AppError("Telegram bot name mismatch", { actual: name.name });
   }
@@ -85,7 +91,14 @@ async function checkTelegramMetadata(input: AppConfig): Promise<void> {
       mismatch: commandMismatch?.command ?? ""
     });
   }
+  if (!telegramMenuButtonMatches(menuButton, expectedMenuButton)) {
+    throw new AppError("Telegram menu button mismatch", {
+      actual: telegramMenuButtonSummary(menuButton),
+      expected: telegramMenuButtonSummary(expectedMenuButton)
+    });
+  }
   pass("Telegram bot metadata", `${me.username} / ${name.name} / ${commands.length} commands`);
+  pass("Telegram menu button", telegramMenuButtonSummary(menuButton));
 }
 
 async function checkBscRpc(input: AppConfig): Promise<void> {
@@ -155,15 +168,11 @@ async function checkPublicHttp(input: AppConfig): Promise<void> {
     label: "HTTP health",
     errorMessage: "HTTP smoke check failed"
   });
-  const poolPage = await fetch(`${baseUrl}/pool/live-smoke`);
-  if (!poolPage.ok) {
-    throw new AppError("Pool mini app page failed", { status: poolPage.status });
+  const surfaceChecks = await checkPublicWebSurfaces(baseUrl);
+  for (const check of surfaceChecks) {
+    pass(check.name, check.detail);
   }
-  const html = await poolPage.text();
-  if (!html.includes("BNancy Pool") || !html.includes("/api/pools/")) {
-    throw new AppError("Pool mini app page is missing analytics bindings");
-  }
-  pass("HTTP runtime", `${baseUrl}/health and /pool/live-smoke`);
+  pass("HTTP runtime", `${baseUrl}/health`);
 }
 
 async function checkPostgres(input: AppConfig): Promise<void> {

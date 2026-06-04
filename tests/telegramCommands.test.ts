@@ -1,5 +1,13 @@
 import { describe, expect, it } from "bun:test";
-import { BOT_COMMANDS, BOT_DESCRIPTION, BOT_NAME, BOT_SHORT_DESCRIPTION } from "../src/bot/telegramCommands.js";
+import {
+  BOT_COMMANDS,
+  BOT_DESCRIPTION,
+  BOT_NAME,
+  BOT_SHORT_DESCRIPTION,
+  expectedTelegramMenuButton,
+  telegramMenuButtonMatches,
+  telegramMenuButtonSummary
+} from "../src/bot/telegramCommands.js";
 
 describe("BOT_COMMANDS", () => {
   it("registers the group Safe setup commands in Telegram", () => {
@@ -37,5 +45,18 @@ describe("BOT_COMMANDS", () => {
       expect(commands.has(command.command)).toBe(false);
       commands.add(command.command);
     }
+  });
+
+  it("uses a Mini App menu button when a public HTTPS base URL is configured", () => {
+    const menuButton = expectedTelegramMenuButton("https://bnancy.example/");
+
+    expect(menuButton).toEqual({ type: "web_app", text: "Open BNancy", web_app: { url: "https://bnancy.example" } });
+    expect(telegramMenuButtonMatches(menuButton, expectedTelegramMenuButton("https://bnancy.example"))).toBe(true);
+    expect(telegramMenuButtonSummary(menuButton)).toBe("Open BNancy -> https://bnancy.example");
+  });
+
+  it("uses the commands menu button without an HTTPS public URL", () => {
+    expect(expectedTelegramMenuButton(undefined)).toEqual({ type: "commands" });
+    expect(expectedTelegramMenuButton("http://localhost:3000")).toEqual({ type: "commands" });
   });
 });

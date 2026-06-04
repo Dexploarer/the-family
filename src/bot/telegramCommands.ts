@@ -1,6 +1,8 @@
 import type { Bot } from "grammy";
 import { Logger } from "../logger.js";
 
+export type TelegramMenuButton = Awaited<ReturnType<Bot["api"]["getChatMenuButton"]>>;
+
 export const BOT_NAME = "BNancy, the Golden Girl of Binance";
 
 export const BOT_SHORT_DESCRIPTION = "BNancy runs BSC Safe group trading, pool accounting, and Flap launches for Telegram groups.";
@@ -42,8 +44,33 @@ export const BOT_COMMANDS = [
   { command: "video", description: "Toggle video notes remotely (platform admins, DM)" }
 ] as const;
 
-export async function configureTelegramBot(bot: Bot): Promise<void> {
-  // These profile/command updates are heavily rate-limited by Telegram
+export function expectedTelegramMenuButton(publicBaseUrl: string | undefined): TelegramMenuButton {
+  const baseUrl = publicBaseUrl === undefined ? undefined : publicBaseUrl.replace(/\/$/, "");
+  if (baseUrl !== undefined && baseUrl.startsWith("https://")) {
+    return { type: "web_app", text: "Open BNancy", web_app: { url: baseUrl } };
+  }
+  return { type: "commands" };
+}
+
+export function telegramMenuButtonMatches(actual: TelegramMenuButton, expected: TelegramMenuButton): boolean {
+  if (actual.type !== expected.type) {
+    return false;
+  }
+  if (actual.type === "web_app" && expected.type === "web_app") {
+    return actual.text === expected.text && actual.web_app.url === expected.web_app.url;
+  }
+  return true;
+}
+
+export function telegramMenuButtonSummary(button: TelegramMenuButton): string {
+  if (button.type === "web_app") {
+    return `${button.text} -> ${button.web_app.url}`;
+  }
+  return button.type;
+}
+
+export async function configureTelegramBot(bot: Bot, publicBaseUrl?: string): Promise<void> {
+  // These profile, command, and menu updates are heavily rate-limited by Telegram
   // (especially setMyName/setMyDescription). A 429 on any of them must NOT
   // crash startup, otherwise the bot never starts polling. Each call is
   // best-effort and independent; the inline button menus work regardless.
@@ -51,7 +78,7 @@ export async function configureTelegramBot(bot: Bot): Promise<void> {
   await configureStep("setMyDescription", () => bot.api.setMyDescription(BOT_DESCRIPTION));
   await configureStep("setMyShortDescription", () => bot.api.setMyShortDescription(BOT_SHORT_DESCRIPTION));
   await configureStep("setMyCommands", () => bot.api.setMyCommands([...BOT_COMMANDS]));
-  await configureStep("setChatMenuButton", () => bot.api.setChatMenuButton({ menu_button: { type: "commands" } }));
+  await configureStep("setChatMenuButton", () => bot.api.setChatMenuButton({ menu_button: expectedTelegramMenuButton(publicBaseUrl) }));
 }
 
 async function configureStep(label: string, action: () => Promise<unknown>): Promise<void> {

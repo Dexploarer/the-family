@@ -1,7 +1,7 @@
 # BNancy
 
 <p align="center">
-  <img src="assets/bnancy.png" alt="BNancy, the Golden Girl of Binance" width="320" />
+  <img src="assets/bnancy.png" alt="B. Nancy profile art" width="320" />
 </p>
 
 BNancy, the Golden Girl of Binance — a production Telegram bot for BSC group trading wallets and Flap token launches.

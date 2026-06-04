@@ -275,22 +275,8 @@ export type HttpRuntime = {
 export async function startHttpRuntime(appState: App, config: AppConfig): Promise<HttpRuntime> {
   // Fill the absolute og:image URL for social-share tags (no-op if no public URL).
   setOgBaseUrl(config.publicBaseUrl);
-  await configureTelegramBot(appState.bot);
-  Logger.info("[HttpRuntime] Telegram commands configured");
-
-  // Persistent Mini App launcher: the bot DM's menu button opens BNancy's web app.
-  // (Per-group pool analytics still open from the group's "Pool analytics" button,
-  // which carries the chat id; the menu button has no group context.)
-  if (config.publicBaseUrl?.startsWith("https://")) {
-    try {
-      await appState.bot.api.setChatMenuButton({
-        menu_button: { type: "web_app", text: "Open BNancy", web_app: { url: config.publicBaseUrl } }
-      });
-      Logger.info("[HttpRuntime] Chat menu button set to Mini App", { url: config.publicBaseUrl });
-    } catch (error) {
-      Logger.warn("[HttpRuntime] setChatMenuButton skipped", { err: error instanceof Error ? error : undefined });
-    }
-  }
+  await configureTelegramBot(appState.bot, config.publicBaseUrl);
+  Logger.info("[HttpRuntime] Telegram metadata configured");
 
   const server = Bun.serve({
     port: config.httpPort,

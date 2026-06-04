@@ -159,7 +159,7 @@ export function renderLandingPage(
       </div>
       <div class="portrait-wrap reveal">
         <div class="portrait-glow"></div>
-        <img class="portrait" src="/og-image.png" alt="BNancy, the Golden Girl of Binance" />
+        <img class="portrait" src="/og-image.png" alt="B. Nancy profile art" />
       </div>
     </header>
 
