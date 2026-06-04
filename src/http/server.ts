@@ -85,6 +85,7 @@ export function createFetchHandler(appState: App, config: AppConfig): (request: 
 
   return function fetch(request: Request): Response | Promise<Response> {
     const url = new URL(request.url);
+    setOgBaseUrl(publicBaseUrlFromRequest(request, url) ?? config.publicBaseUrl);
     // The Telegram webhook response goes straight back to Telegram, so it skips the
     // browser security headers applied to every other (user-facing) response.
     if (request.method === "POST" && webhookPath !== undefined && url.pathname === webhookPath && webhookHandler !== undefined) {
@@ -238,6 +239,19 @@ export function createFetchHandler(appState: App, config: AppConfig): (request: 
     }
     return Response.json({ error: "Not found" }, { status: 404 });
   }
+}
+
+function firstHeaderValue(value: string | null): string | undefined {
+  const first = value?.split(",")[0]?.trim();
+  return first === "" ? undefined : first;
+}
+
+function publicBaseUrlFromRequest(request: Request, url: URL): string | undefined {
+  const host = firstHeaderValue(request.headers.get("x-forwarded-host")) ?? firstHeaderValue(request.headers.get("host")) ?? url.host;
+  if (!host) return undefined;
+  const forwardedProto = firstHeaderValue(request.headers.get("x-forwarded-proto"));
+  const proto = forwardedProto ?? (host.endsWith(".elizacloud.ai") ? "https" : url.protocol.replace(/:$/, ""));
+  return `${proto}://${host}`.replace(/\/$/, "");
 }
 
 const CONTENT_SECURITY_POLICY = [

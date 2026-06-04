@@ -265,6 +265,27 @@ describe("HTTP fetch handler", () => {
     }
   });
 
+  it("uses the forwarded public host for social-preview images", async () => {
+    const config = { ...testConfig(), publicBaseUrl: "https://old.example" };
+    const handler = createFetchHandler(buildApp(config), config);
+
+    const response = await handler(
+      new Request("http://internal/", {
+        headers: {
+          "x-forwarded-host": "e06bb509-6c52-4c33-a9f7-66addc43e8c8.elizacloud.ai",
+          "x-forwarded-proto": "https"
+        }
+      })
+    );
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain(
+      'content="https://e06bb509-6c52-4c33-a9f7-66addc43e8c8.elizacloud.ai/og-image.png"'
+    );
+    expect(html).not.toContain("old.example");
+  });
+
   it("protects admin APIs when dashboard is not configured", async () => {
     const handler = createFetchHandler(buildApp(testConfig()), testConfig());
     const response = await handler(new Request("http://test/api/admin/overview"));
