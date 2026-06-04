@@ -79,6 +79,16 @@ describe("HTTP fetch handler", () => {
     expect(html).toContain("/api/wallet-links/");
   });
 
+  it("allows the Cloudflare analytics beacon injected by the platform", async () => {
+    const handler = createFetchHandler(buildApp(testConfig()), testConfig());
+    const response = await handler(new Request("http://test/"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-security-policy")).toContain(
+      "https://static.cloudflareinsights.com"
+    );
+  });
+
   it("links a wallet end-to-end through the signature endpoint", async () => {
     const app = buildApp(testConfig());
     const handler = createFetchHandler(app, testConfig());
