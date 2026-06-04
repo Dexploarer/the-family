@@ -187,7 +187,7 @@ export function createFetchHandler(appState: App, config: AppConfig): (request: 
         return route(async () => handleAdminAuthLogout(appState, config, request));
       }
       if (request.method === "GET" && url.pathname === "/api/admin/auth/me") {
-        return route(async () => handleAdminAuthMe(appState, config, request));
+        return route(async () => handleAdminAuthMe(appState, config, request, url));
       }
       if (request.method === "GET" && url.pathname === "/api/admin/branding/public") {
         return route(async () => handleAdminBrandingPublic(appState));

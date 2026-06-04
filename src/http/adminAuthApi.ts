@@ -97,12 +97,15 @@ export async function handleAdminAuthAcceptInvite(app: App, config: AppConfig, r
   return jsonWithSession({ user: result.user }, result.sessionId, config);
 }
 
-export async function handleAdminAuthMe(app: App, config: AppConfig, request: Request): Promise<Response> {
+export async function handleAdminAuthMe(app: App, config: AppConfig, request: Request, url: URL): Promise<Response> {
   if (!adminDashboardEnabled(config)) {
     return disabled();
   }
   const principal = await resolveAdminPrincipal(app, config, request);
   if (principal === null) {
+    if (url.searchParams.get("optional") === "1") {
+      return Response.json({ user: null });
+    }
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   return Response.json({ user: serializePrincipal(principal) });

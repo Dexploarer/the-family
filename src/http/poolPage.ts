@@ -163,6 +163,10 @@ export function renderPoolPage(chatId: string): string {
       if (telegram?.initData) query.set("telegramInitData", telegram.initData);
       const localUser = new URLSearchParams(location.search).get("telegramUserId");
       if (!telegram?.initData && localUser) query.set("telegramUserId", localUser);
+      if (!telegram?.initData && !localUser) {
+        renderError("Telegram Web App identity is required");
+        return;
+      }
       const response = await fetch("/api/pools/" + encodeURIComponent(chatId) + "/analytics?" + query.toString());
       if (!response.ok) {
         const payload = await response.json();

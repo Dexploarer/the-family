@@ -8,6 +8,7 @@ describe("renderPoolPage", () => {
     expect(html).toContain("telegram-web-app.js");
     expect(html).toContain("/api/pools/");
     expect(html).toContain("Pool analytics");
+    expect(html).toContain("Telegram Web App identity is required");
     expect(html).toContain("data-chat-id=\"-100123\"");
   });
 });

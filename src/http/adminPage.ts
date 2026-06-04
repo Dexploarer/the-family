@@ -562,8 +562,12 @@ export function renderAdminPage(branding: BrandingSnapshot): string {
     });
 
     try {
-      const session = await api("/api/admin/auth/me");
-      await enterDashboard(session.user);
+      const session = await api("/api/admin/auth/me?optional=1");
+      if (session.user) {
+        await enterDashboard(session.user);
+      } else {
+        await startInviteAccept();
+      }
     } catch {
       await startInviteAccept();
     }

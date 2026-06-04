@@ -302,6 +302,17 @@ describe("HTTP fetch handler", () => {
     expect(response.status).toBe(503);
   });
 
+  it("allows the admin shell to probe for an optional session", async () => {
+    const config = { ...testConfig(), adminSessionSecret: "01234567890123456789012345678901" };
+    const handler = createFetchHandler(buildApp(config), config);
+    const optional = await handler(new Request("http://test/api/admin/auth/me?optional=1"));
+    const required = await handler(new Request("http://test/api/admin/auth/me"));
+
+    expect(optional.status).toBe(200);
+    expect(await optional.json()).toEqual({ user: null });
+    expect(required.status).toBe(401);
+  });
+
   it("returns admin overview for legacy ops token", async () => {
     const config = { ...testConfig(), platformOpsToken: "test-ops-token-secret" };
     const handler = createFetchHandler(buildApp(config), config);
