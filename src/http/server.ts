@@ -1,4 +1,5 @@
 import { webhookCallback } from "grammy";
+import { timingSafeEqual } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import type { App } from "../app.js";
@@ -74,6 +75,36 @@ const SafeDeploymentPayloadSchema = z.object({
   transactionHash: z.string().regex(/^0x[0-9a-fA-F]+$/)
 });
 
+const BridgeRpcIdSchema = z.union([z.string(), z.number(), z.null()]);
+
+const BridgePayloadSchema = z.object({
+  jsonrpc: z.literal("2.0").optional(),
+  id: BridgeRpcIdSchema.optional(),
+  method: z.enum(["status.get", "heartbeat", "message.send"]),
+  params: z
+    .object({
+      text: z.string().optional(),
+      userId: z.string().optional(),
+      roomId: z.string().optional(),
+      conversationId: z.string().optional()
+    })
+    .optional()
+});
+
+type BridgeRpcId = z.infer<typeof BridgeRpcIdSchema>;
+type BridgeStatusResult = {
+  status: "running";
+  ready: true;
+  runtime: "web";
+  chat: true;
+  agentName: "BNancy";
+};
+type BridgeMessageResult = {
+  text: string;
+  runtime: "web";
+  agentName: "BNancy";
+};
+
 export function createFetchHandler(appState: App, config: AppConfig): (request: Request) => Response | Promise<Response> {
   const webhookPath = config.telegramWebhookSecret === undefined ? undefined : `/telegram/${config.telegramWebhookSecret}`;
   const webhookHandler = webhookPath === undefined ? undefined : webhookCallback(appState.bot, "bun");
@@ -111,6 +142,9 @@ export function createFetchHandler(appState: App, config: AppConfig): (request: 
     }
     if (request.method === "GET" && (url.pathname === "/health" || url.pathname === "/api/health")) {
       return Response.json({ ok: true });
+    }
+    if (request.method === "POST" && url.pathname === "/bridge") {
+      return route(async () => handleBridge(config, request));
     }
     if (request.method === "GET" && url.pathname === "/og-image.png") {
       // Brand image for social-share previews (og:image). Bundled in the repo/image.
@@ -476,6 +510,100 @@ async function getPoolAnalytics(appState: App, config: AppConfig, url: URL): Pro
     resolveTelegramUserIdFromQuery(url, config)
   );
   return Response.json(serializePoolAnalytics(analytics));
+}
+
+async function handleBridge(config: AppConfig, request: Request): Promise<Response> {
+  if (!isBridgeAuthorized(config, request.headers)) {
+    if (config.elizaApiToken === undefined) {
+      return bridgeError(null, -32001, "Bridge token is not configured", 503);
+    }
+    return bridgeError(null, -32001, "Unauthorized", 401);
+  }
+
+  const payload = await parseBridgeBody(request);
+  if (payload === null) {
+    return bridgeError(null, -32600, "Invalid bridge request body", 400);
+  }
+  if (payload.method === "status.get" || payload.method === "heartbeat") {
+    return bridgeResult(payload.id, {
+      status: "running",
+      ready: true,
+      runtime: "web",
+      chat: true,
+      agentName: "BNancy"
+    });
+  }
+
+  const text = payload.params?.text;
+  if (typeof text !== "string" || text.trim().length === 0) {
+    return bridgeError(payload.id, -32602, "message.send requires params.text", 400);
+  }
+
+  return bridgeResult(payload.id, {
+    text: buildBridgeReply(text),
+    runtime: "web",
+    agentName: "BNancy"
+  });
+}
+
+async function parseBridgeBody(request: Request): Promise<z.infer<typeof BridgePayloadSchema> | null> {
+  try {
+    return BridgePayloadSchema.parse(await request.json());
+  } catch (error) {
+    if (error instanceof z.ZodError || error instanceof SyntaxError) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+function bridgeResult(id: BridgeRpcId | undefined, result: BridgeStatusResult | BridgeMessageResult): Response {
+  return Response.json({ jsonrpc: "2.0", id: id === undefined ? null : id, result });
+}
+
+function bridgeError(id: BridgeRpcId | undefined, code: number, message: string, status: number): Response {
+  return Response.json({ jsonrpc: "2.0", id: id === undefined ? null : id, error: { code, message } }, { status });
+}
+
+function buildBridgeReply(text: string): string {
+  if (/\b(smoke|status|health|ok|ready|live)\b/i.test(text)) {
+    return "OK - BNancy is live on ElizaCloud. Web UI, operator control, and Telegram routing are reachable.";
+  }
+  return "BNancy is online in ElizaCloud. Use Telegram for group trading commands like /start, /pool, /bnancy, /buy, and owner Safe signing links; this dashboard chat is a support bridge, not a custody or trade-execution surface.";
+}
+
+function isBridgeAuthorized(config: AppConfig, headers: Headers): boolean {
+  if (config.elizaApiToken === undefined) {
+    return false;
+  }
+  const token = bridgeTokenFromHeaders(headers);
+  return token !== undefined && timingSafeStringEqual(token, config.elizaApiToken);
+}
+
+function bridgeTokenFromHeaders(headers: Headers): string | undefined {
+  const authorization = headers.get("authorization")?.trim();
+  if (authorization !== undefined) {
+    const bearer = /^Bearer\s+(.+)$/i.exec(authorization);
+    const token = bearer?.[1]?.trim();
+    if (token !== undefined && token.length > 0) {
+      return token;
+    }
+  }
+  const apiKey = headers.get("x-api-key")?.trim();
+  if (apiKey !== undefined && apiKey.length > 0) {
+    return apiKey;
+  }
+  const elizaToken = headers.get("x-eliza-token")?.trim();
+  if (elizaToken !== undefined && elizaToken.length > 0) {
+    return elizaToken;
+  }
+  return undefined;
+}
+
+function timingSafeStringEqual(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
 }
 
 async function submitSafeSignature(appState: App, config: AppConfig, request: Request, pathname: string): Promise<Response> {

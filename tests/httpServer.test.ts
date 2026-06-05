@@ -58,6 +58,100 @@ describe("HTTP fetch handler", () => {
     }
   });
 
+  it("rejects bridge requests without the runtime token", async () => {
+    const config = { ...testConfig(), elizaApiToken: "bridge-token-123456789" };
+    const handler = createFetchHandler(buildApp(config), config);
+    const response = await handler(
+      new Request("http://test/bridge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: "bridge-auth", method: "status.get", params: {} })
+      })
+    );
+    const body = (await response.json()) as { error: { message: string } };
+
+    expect(response.status).toBe(401);
+    expect(body.error.message).toBe("Unauthorized");
+  });
+
+  it("returns bridge runtime status for ElizaCloud", async () => {
+    const config = { ...testConfig(), elizaApiToken: "bridge-token-123456789" };
+    const handler = createFetchHandler(buildApp(config), config);
+    const response = await handler(
+      new Request("http://test/bridge", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer bridge-token-123456789"
+        },
+        body: JSON.stringify({ jsonrpc: "2.0", id: "bridge-status", method: "status.get", params: {} })
+      })
+    );
+    const body = (await response.json()) as {
+      result: { status: string; ready: boolean; chat: boolean; runtime: string; agentName: string };
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.result).toEqual({
+      status: "running",
+      ready: true,
+      runtime: "web",
+      chat: true,
+      agentName: "BNancy"
+    });
+  });
+
+  it("returns dashboard bridge chat replies for ElizaCloud", async () => {
+    const config = { ...testConfig(), elizaApiToken: "bridge-token-123456789" };
+    const handler = createFetchHandler(buildApp(config), config);
+    const response = await handler(
+      new Request("http://test/bridge", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Eliza-Token": "bridge-token-123456789"
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: "bridge-message",
+          method: "message.send",
+          params: { text: "BNancy cloud smoke check", userId: "dashboard", roomId: "dashboard-agent" }
+        })
+      })
+    );
+    const body = (await response.json()) as { result: { text: string; runtime: string; agentName: string } };
+
+    expect(response.status).toBe(200);
+    expect(body.result.text).toContain("OK - BNancy is live on ElizaCloud");
+    expect(body.result.runtime).toBe("web");
+    expect(body.result.agentName).toBe("BNancy");
+  });
+
+  it("rejects bridge messages without text", async () => {
+    const config = { ...testConfig(), elizaApiToken: "bridge-token-123456789" };
+    const handler = createFetchHandler(buildApp(config), config);
+    const response = await handler(
+      new Request("http://test/bridge", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Api-Key": "bridge-token-123456789"
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: "bridge-invalid",
+          method: "message.send",
+          params: { text: "   " }
+        })
+      })
+    );
+    const body = (await response.json()) as { error: { code: number; message: string } };
+
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe(-32602);
+    expect(body.error.message).toBe("message.send requires params.text");
+  });
+
   it("returns 404 for unknown routes", async () => {
     const handler = createFetchHandler(buildApp(testConfig()), testConfig());
     const response = await handler(new Request("http://test/nope"));

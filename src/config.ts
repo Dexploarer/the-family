@@ -48,7 +48,8 @@ const EnvSchema = z
     ADMIN_SESSION_SECRET: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(32).optional()),
     ADMIN_SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(7),
     AGENTMAIL_API_KEY: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(1).optional()),
-    AGENTMAIL_INBOX_ID: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(1).optional())
+    AGENTMAIL_INBOX_ID: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(1).optional()),
+    ELIZA_API_TOKEN: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(16).optional())
   })
   .superRefine((env, ctx) => {
     if (env.STORAGE_DRIVER === "postgres" && env.DATABASE_URL === undefined) {
@@ -105,6 +106,7 @@ export type AppConfig = {
   adminSessionTtlDays: number;
   agentMailApiKey?: string;
   agentMailInboxId?: string;
+  elizaApiToken?: string;
 };
 
 export function loadConfig(): AppConfig {
@@ -158,6 +160,7 @@ export function loadConfig(): AppConfig {
     ...(env.ADMIN_SESSION_SECRET === undefined ? {} : { adminSessionSecret: env.ADMIN_SESSION_SECRET }),
     adminSessionTtlDays: env.ADMIN_SESSION_TTL_DAYS,
     ...(env.AGENTMAIL_API_KEY === undefined ? {} : { agentMailApiKey: env.AGENTMAIL_API_KEY }),
-    ...(env.AGENTMAIL_INBOX_ID === undefined ? {} : { agentMailInboxId: env.AGENTMAIL_INBOX_ID })
+    ...(env.AGENTMAIL_INBOX_ID === undefined ? {} : { agentMailInboxId: env.AGENTMAIL_INBOX_ID }),
+    ...(env.ELIZA_API_TOKEN === undefined ? {} : { elizaApiToken: env.ELIZA_API_TOKEN })
   };
 }
